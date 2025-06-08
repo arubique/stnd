@@ -11,10 +11,13 @@ import time
 
 # local imports
 CUR_FOLDER = os.path.dirname(os.path.abspath(__file__))
+STND_ROOT = os.path.dirname(os.path.dirname(CUR_FOLDER))
 sys.path.insert(
     0,
-    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(CUR_FOLDER)))),
+    STND_ROOT,
 )
+print(f"STND_ROOT: {STND_ROOT}")
+print(os.listdir(STND_ROOT))
 from stnd.utility.utils import (
     optionally_make_parent_dir,
     run_cmd_through_popen,
@@ -25,7 +28,6 @@ sys.path.pop(0)
 
 UNIQUE_COLUMNS = ["run_folder", "walltime"]
 TOTAL_ROWS = 3
-STND_ROOT = os.path.dirname(os.path.dirname(CUR_FOLDER))
 
 
 def create_test_csv(csv_path, config_path):
