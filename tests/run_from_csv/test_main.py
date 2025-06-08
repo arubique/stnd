@@ -11,8 +11,14 @@ import time
 
 # local imports
 CUR_FOLDER = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(CUR_FOLDER)))
-from stnd.utility.utils import optionally_make_parent_dir, run_cmd_through_popen
+sys.path.insert(
+    0,
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(CUR_FOLDER)))),
+)
+from stnd.utility.utils import (
+    optionally_make_parent_dir,
+    run_cmd_through_popen,
+)
 
 sys.path.pop(0)
 
