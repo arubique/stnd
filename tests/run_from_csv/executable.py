@@ -2,10 +2,7 @@ import random
 
 
 from stnd.utility.helpers_for_main import prepare_wrapper_for_experiment
-from stnd.utility.logger import (
-    try_to_log_in_wandb,
-    try_to_log_in_csv
-)
+from stnd.utility.logger import try_to_log_in_wandb, try_to_log_in_csv
 
 
 def check_config_for_demo_experiment(config, config_path, logger):
@@ -14,9 +11,7 @@ def check_config_for_demo_experiment(config, config_path, logger):
 
 
 def demo_experiment(
-    experiment_config,
-    logger,
-    processes_to_kill_before_exiting
+    experiment_config, logger, processes_to_kill_before_exiting
 ):
     image_size = experiment_config["image"]["shape"]
 
@@ -36,18 +31,16 @@ def demo_experiment(
         if init_type == "random":
             colored_image[channel] = [
                 [random.random() for _ in range(image_size[1])]
-                    for _
-                        in range(image_size[0])
+                for _ in range(image_size[0])
             ]
         else:
             colored_image[channel] = [
                 [1 for _ in range(image_size[1])] for _ in range(image_size[0])
             ]
 
-        mean = (
-            sum(sum(sum(row) for row in channel) for channel in colored_image)
-            / (image_size[0] * image_size[1] * 3)
-        )
+        mean = sum(
+            sum(sum(row) for row in channel) for channel in colored_image
+        ) / (image_size[0] * image_size[1] * 3)
 
         # wandb_stats_to_log = {
         #     "Confusing sample before optimization":
