@@ -1,2 +1,4 @@
 path_to_default_config,path_to_main,whether_to_run,slurm:cpus-per-task,slurm:partition,delta:logging/wandb/netrc_path,delta:logging/use_wandb,delta:initialization_type,delta:image/color,run_folder,status,slurm job id,mean of latest tensor,walltime
-./config.yaml,./executable.py,0,4,a100,~/.netrc,FALSE,random,red,<run_folder>,Completed,Not found,0.16768473894897673,0:00:00.156246
+./config.yaml,./executable.py,0,4,a100,~/.netrc,FALSE,zeros,red,<run_folder>,Completed,Not found,0.0,<walltime>
+./config.yaml,./executable.py,0,4,a100,~/.netrc,FALSE,random,red,?,?,?,?,<walltime>
+./config.yaml,./executable.py,0,4,a100,~/.netrc,FALSE,ones,red,<run_folder>,Completed,Not found,0.3333333333333333,<walltime>
