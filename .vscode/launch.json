@@ -15,7 +15,10 @@
                 "-v"
             ],
             "console": "integratedTerminal",
-            "justMyCode": false
+            "env": {
+                "CONDA_DEFAULT_ENV": "${workspaceFolder}/envs/stnd_env"
+            },
+            // "justMyCode": false
         }
     ]
 }
