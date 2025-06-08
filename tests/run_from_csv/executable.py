@@ -33,7 +33,12 @@ def demo_experiment(
                 [random.random() for _ in range(image_size[1])]
                 for _ in range(image_size[0])
             ]
+        elif init_type == "zeros":
+            colored_image[channel] = [
+                [0 for _ in range(image_size[1])] for _ in range(image_size[0])
+            ]
         else:
+            assert init_type == "ones"
             colored_image[channel] = [
                 [1 for _ in range(image_size[1])] for _ in range(image_size[0])
             ]
