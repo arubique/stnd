@@ -1865,7 +1865,7 @@ def get_filename_from_url(url):
 #     remove_file_or_folder(downloaded_tar)
 
 
-def optionally_make_dir(path, call_dirname=True):
+def optionally_make_parent_dir(path, call_dirname=True):
     if call_dirname:
         base_dir = os.path.dirname(path)
     else:
