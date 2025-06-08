@@ -1,8 +1,21 @@
 import random
+import sys
 
 
+# local imports
+from test_main import STND_ROOT
+
+sys.path.insert(
+    0,
+    STND_ROOT,
+)
 from stnd.utility.helpers_for_main import prepare_wrapper_for_experiment
-from stnd.utility.logger import try_to_log_in_wandb, try_to_log_in_csv
+from stnd.utility.logger import (
+    try_to_log_in_wandb,
+    try_to_log_in_csv,
+)
+
+sys.path.pop(0)
 
 
 def check_config_for_demo_experiment(config, config_path, logger):
