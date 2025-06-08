@@ -16,8 +16,6 @@ sys.path.insert(
     0,
     STND_ROOT,
 )
-print(f"STND_ROOT: {STND_ROOT}")
-print(os.listdir(STND_ROOT))
 from stnd.utility.utils import (
     optionally_make_parent_dir,
     run_cmd_through_popen,
@@ -28,6 +26,9 @@ sys.path.pop(0)
 
 UNIQUE_COLUMNS = ["run_folder", "walltime"]
 TOTAL_ROWS = 3
+MAX_SLEEPS = 100
+SMALL_SLEEP_TIME = 1
+SLEEP_TIME = 5
 
 
 def create_test_csv(csv_path, config_path):
@@ -141,7 +142,7 @@ def test_main_script(test_env):
 
     # Run the command and check for errors
     result = subprocess.run(cmd, capture_output=True, text=True)
-    time.sleep(1)  # make sure that status column is created
+    time.sleep(SMALL_SLEEP_TIME)  # make sure that status column is created
 
     # Check that the script ran successfully
     assert result.returncode == 0, f"Script failed with error: {result.stderr}"
@@ -151,12 +152,16 @@ def test_main_script(test_env):
 
     # Check that the CSV was updated
     df = pd.read_csv(test_env["csv_path"])
-    if df["status"].iloc[0] in ["Submitted", "Running"]:
+    num_sleeps = 0
+    while (
+        df["status"].iloc[0] in ["Submitted", "Running"]
+        and num_sleeps < MAX_SLEEPS
+    ):
         # Wait a bit for the job to complete
-        time.sleep(5)
+        time.sleep(SLEEP_TIME)
         df = pd.read_csv(test_env["csv_path"])
-    else:
-        assert df["status"].iloc[0] == "Completed", "CSV status was not updated"
+        num_sleeps += 1
+    assert df["status"].iloc[0] == "Completed", "CSV status was not updated"
 
     # Load canonical CSV for comparison
     canonical_df = pd.read_csv(os.path.join(CUR_FOLDER, "canonical_csv.csv"))
