@@ -29,7 +29,7 @@ from stnd.utility.utils import (
     optionally_make_parent_dir,
     itself_and_lower_upper_case,
     log_or_print,
-    error_or_print
+    error_or_print,
 )
 from stnd.utility.configs import (
     AUTOGEN_PREFIX,
@@ -123,6 +123,11 @@ def parse_args():
             "if 0 - then use one group per job"
         ),
         default="0",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="enable debug mode without submitting jobs in the end",
     )
     return parser.parse_args()
 
@@ -224,7 +229,7 @@ def main(make_final_cmd=None, allowed_prefixes=(SLURM_PREFIX, DELTA_PREFIX)):
                         )
 
                     starmap_args_for_job_submitting = [
-                        (run_cmd, log_file_path)
+                        (run_cmd, log_file_path, args.debug)
                         for run_cmd in shared_rows_to_run
                     ]
 
@@ -259,9 +264,14 @@ def get_pool_size(iterable_len):
     return min(min(max(1, mp.cpu_count() - 1), iterable_len), MAX_PROCESSES)
 
 
-def submit_job(run_cmd, log_file_path):
-    with open(log_file_path, "w+") as log_file:
-        subprocess.call(run_cmd, stdout=log_file, stderr=log_file, shell=True)
+def submit_job(run_cmd, log_file_path, debug=False):
+    if debug:
+        print("COMMAND TO SUBMIT: ", run_cmd)
+    else:
+        with open(log_file_path, "w+") as log_file:
+            subprocess.call(
+                run_cmd, stdout=log_file, stderr=log_file, shell=True
+            )
 
 
 def expand_gsheet(csv_path, spreadsheet_url, worksheet_name, gspread_client):
