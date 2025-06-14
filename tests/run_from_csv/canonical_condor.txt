@@ -1,0 +1,12 @@
+##################################
+# HTCondor submission file for Python script execution with the arguments
+##################################
+
+executable = <executable>
+cpus-per-task = 4
+partition = a100
+output = logs/job_stdout.out
+error = logs/job_stderr.err
+periodic_remove = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))
+##################################
+queue
