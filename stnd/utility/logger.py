@@ -1,9 +1,5 @@
 import os
-
-# os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # suppress tf warning
 import shutil
-
-# import torch
 import sys
 import traceback
 import wandb
@@ -33,37 +29,31 @@ from stnd.utility.utils import (
     get_current_run_folder,
     extract_profiler_results,
     write_into_csv_with_column_names,
-    # prepare_factory_without_args,
-    # kill_processes,
     touch_file,
     read_json,
     retrier_factory,
     get_value_from_config,
     read_csv_as_dict,
     is_number,
-    # apply_func_to_dict_by_nested_key,
-    # get_leaves_of_nested_dict,
-    # pretty_json,
-    # is_nested_dict,
     make_file_lock,
     get_hostname,
     get_system_root_path,
     raise_unknown,
-    # assert_two_values_are_close,
-    # folder_still_has_updates,
     as_str_for_csv,
     remove_file_or_folder,
     log_or_print,
     get_project_root_path,
-    # compute_tensor_cumsums,
     itself_and_lower_upper_case,
     get_with_assert,
 )
 
-# from stnd.utility.imports import (
-#     lazy_import
-# )
 sys.path.pop(0)
+
+
+# Condor
+CONDOR_PREFIX = "condor"
+CONDOR_BID_KEY = "bid"
+ENV_VAR_PREFIX = "env_var"
 
 
 PROGRESS_FREQUENCY = 0.01
