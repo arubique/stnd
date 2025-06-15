@@ -1,0 +1,2 @@
+path_to_default_config,path_to_main,whether_to_run,delta:exec_path,delta:conda_env,delta:is_python,delta:kwargs/number_arg,delta:two_dash_flags,delta:single_dash_flags,delta:take_last_dict/saved_number,status,run_folder,slurm job id,saved_number,walltime
+./tests/run_from_csv/configs/runner_config.yaml,__RUNNER__,0,./tests/run_from_csv/executables/runner_target.py,None,True,10,[print_stdout],[p],Default,Completed,<run_folder>,Not found,<saved_number>,<walltime>

@@ -1,6 +1,8 @@
 # custom folders
 /tmp
 /envs
+/experiments
+*.lock
 
 
 # Byte-compiled / optimized / DLL files

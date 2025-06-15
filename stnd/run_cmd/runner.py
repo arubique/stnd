@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 
 
 # local modules
@@ -9,6 +10,7 @@ from stnd.utility.utils import (
     get_with_assert,
     run_cmd_through_popen,
 )
+from stnd.utility.logger import try_to_log_in_csv
 
 sys.path.pop(0)
 
@@ -19,6 +21,23 @@ def patch_runner_config(experiment_config):
 
 def check_runner_config(experiment_config, config_path, logger=None):
     pass
+
+
+def make_buffer_processor(logger, experiment_config):
+    take_last_dict = experiment_config.get("take_last_dict", None)
+    if take_last_dict is None:
+        return None
+    else:
+        take_last_dict = {k: re.compile(v) for k, v in take_last_dict.items()}
+
+    def buffer_processor(buffer):
+        for col_name, regex in take_last_dict.items():
+            search_res = re.findall(regex, buffer)
+            if len(search_res) > 0:
+                extracted_value = search_res[-1]
+                try_to_log_in_csv(logger, col_name, extracted_value)
+
+    return buffer_processor
 
 
 def runner(experiment_config, logger=None, processes_to_kill_before_exiting=[]):
@@ -33,9 +52,15 @@ def runner(experiment_config, logger=None, processes_to_kill_before_exiting=[]):
         logger=logger,
     )
 
+    stdout_buffer_processor = make_buffer_processor(logger, experiment_config)
+
     logger.log(f"Running command:\n{cmd_to_run}", auto_newline=True)
     logger.log(f"As one line:\n{cmd_to_run}", auto_newline=False)
-    run_cmd_through_popen(cmd_to_run, logger)
+    run_cmd_through_popen(
+        cmd_to_run,
+        logger,
+        stdout_buffer_processor=stdout_buffer_processor,
+    )
 
 
 def make_task_cmd(
