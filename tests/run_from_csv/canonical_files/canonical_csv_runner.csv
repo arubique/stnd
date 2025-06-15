@@ -1,0 +1,2 @@
+path_to_default_config,path_to_main,whether_to_run,delta:exec_path,delta:conda_env,delta:is_python,status,run_folder,slurm job id,walltime
+./configs/runner_config.yaml,__RUNNER__,0,./executables/runner_target.py,None,True,Completed,<run_folder>,Not found,<walltime>
