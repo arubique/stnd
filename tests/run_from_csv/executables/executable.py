@@ -1,9 +1,16 @@
 import random
 import sys
+import os
 
 
 # local imports
+sys.path.insert(
+    0,
+    os.path.dirname(os.path.dirname(__file__)),
+)
 from test_main import STND_ROOT
+
+sys.path.pop(0)
 
 sys.path.insert(
     0,
