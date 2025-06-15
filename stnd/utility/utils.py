@@ -1266,6 +1266,13 @@ def retrier_factory(
 # from: https://stackoverflow.com/questions/8230315/how-to-json-serialize-sets
 class SetEncoder(json.JSONEncoder):
     def default(self, obj):
+        try:
+            from deepdiff import DeepDiff, model as dd_model
+        except ImportError:
+            raise ImportError(
+                "Please install deepdiff to use pretty_json: "
+                "pip install deepdiff"
+            )
         if isinstance(obj, (set, dd_model.PrettyOrderedSet)):
             return list(obj)
         return json.JSONEncoder.default(self, obj)
