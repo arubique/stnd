@@ -335,7 +335,7 @@ def test_sbatch_scripts(test_env):
     check_submission_script(cmd, "slurm")
 
 
-# @pytest.mark.skip(reason="Temporarily disabled")
+@pytest.mark.skipif(SKIP_TESTS, reason="Skip tests when debugging")
 def test_condor_scripts(test_env):
     """Test that the condor scripts are created correctly."""
 
@@ -373,7 +373,7 @@ def check_submission_script(cmd, cluster_type):
 
     if cluster_type == "condor":
         with open(
-            os.path.join(CUR_FOLDER, f"canonical_condor_sh_file.txt"), "r"
+            os.path.join(CANONICAL_FOLDER, f"canonical_condor_sh_file.txt"), "r"
         ) as f:
             canonical_contents_sh_file = f.read()
     else:
