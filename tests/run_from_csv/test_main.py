@@ -21,13 +21,16 @@ from stnd.utility.utils import (
     optionally_make_parent_dir,
     run_cmd_through_popen,
 )
-from stnd.run_from_csv.__main__ import RUNNER_PLACEHOLDER
+from stnd.run_from_csv.__main__ import RUNNER_PLACEHOLDER, BACKSLASH_PLACEHOLDER
+from stnd.utility.logger import PLACEHOLDERS_FOR_DEFAULT
 
 sys.path.pop(0)
 
 
 UNIQUE_COLUMNS = ["run_folder", "walltime"]
+DEFAULT_PLACEHOLDER = PLACEHOLDERS_FOR_DEFAULT[0]
 TOTAL_ROWS = 3
+RUNNER_ROWS = 2
 MAX_SLEEPS = 100
 SMALL_SLEEP_TIME = 1
 SLEEP_TIME = 5
@@ -58,14 +61,19 @@ def create_test_csv(csv_path, config_path, cluster_type="slurm"):
         }
     elif cluster_type == "runner":
         data = {
-            "path_to_default_config": [config_path],
-            "path_to_main": [RUNNER_PLACEHOLDER],
-            "whether_to_run": ["1"],
-            "delta:exec_path": [path_to_runner_target],
-            "delta:conda_env": ["None"],
-            "delta:is_python": ["True"],
-            "delta:two_dash_flags": ["[print_stdout]"],
-            "delta:single_dash_flags": ["[p]"],
+            "path_to_default_config": [config_path] * RUNNER_ROWS,
+            "path_to_main": [RUNNER_PLACEHOLDER] * RUNNER_ROWS,
+            "whether_to_run": ["1"] * RUNNER_ROWS,
+            "delta:exec_path": [path_to_runner_target] * RUNNER_ROWS,
+            "delta:conda_env": ["None"] * RUNNER_ROWS,
+            "delta:is_python": ["True"] * RUNNER_ROWS,
+            "delta:kwargs/number_arg": ["10"] * RUNNER_ROWS,
+            "delta:two_dash_flags": ["[print_stdout]"] * RUNNER_ROWS,
+            "delta:single_dash_flags": ["[p]"] * RUNNER_ROWS,
+            "delta:take_last_dict/saved_number": [
+                DEFAULT_PLACEHOLDER,
+                f"save_number: ({BACKSLASH_PLACEHOLDER}d+{BACKSLASH_PLACEHOLDER}.{BACKSLASH_PLACEHOLDER}d+)",
+            ],
         }
     else:
         raise ValueError(f"Invalid cluster type: {cluster_type}")
@@ -95,8 +103,6 @@ def create_test_config(config_path):
 def test_env(request):
     """Set up test environment with temporary files."""
     with tempfile.TemporaryDirectory(prefix=CUR_FOLDER) as temp_dir:
-        print(f"temp_dir for testing: {temp_dir}")
-
         # Create symlink to parent repo's .git directory so git commands work
         # git diff in logs will show that all the files are deleted
         parent_git_dir = os.path.join(

@@ -1,0 +1,20 @@
+conda_env: null
+exec_path: ./tests/run_from_csv/executables/runner_target.py
+is_python: true
+kwargs:
+  number_arg: 10
+logging:
+  gdrive_storage_folder: null
+  output_csv:
+    path: ./tests/run_from_csv/csvs/csv_for_runner.csv
+    row_number: 1
+    spreadsheet_url: null
+    worksheet_name: csv_for_runner.csv
+  use_tb: false
+  use_wandb: false
+single_dash_flags: [p]
+two_dash_flags: [print_stdout]
+params:
+  random_seed: 42
+take_last_dict:
+  saved_number: 'save_number: (\d+\.\d+)'

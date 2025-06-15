@@ -237,9 +237,23 @@ def check_dict(
     return check_1 and check_2
 
 
-def run_cmd_through_popen(cmd_to_run, logger):
-    def read_out(process, out_type, logger):
+def run_cmd_through_popen(
+    cmd_to_run,
+    logger,
+    stdout_buffer_processor=None,
+    stderr_buffer_processor=None,
+):
+    def read_out(process, out_type, logger, buffer_processor=None):
+        def process_buffer(buffer, prev_buffer, buffer_processor, log_func):
+            if buffer_processor is not None:
+                buffer_processor(prev_buffer + buffer)
+            log_func(buffer, logger)
+            prev_buffer = buffer
+            buffer = ""
+            return buffer, prev_buffer
+
         buffer = ""
+        prev_buffer = ""
         if out_type == "stdout":
             out = process.stdout
             log_func = log_or_print
@@ -256,11 +270,12 @@ def run_cmd_through_popen(cmd_to_run, logger):
             buffer += output
 
             if output == "\n" or len(buffer) > MAX_BUFFER_SIZE:
-                log_func(buffer, logger)
-                buffer = ""
+                buffer, prev_buffer = process_buffer(
+                    buffer, prev_buffer, buffer_processor, log_func
+                )
 
         if buffer != "":
-            log_func(buffer, logger)
+            process_buffer(buffer, prev_buffer, buffer_processor, log_func)
 
     process = subprocess.Popen(
         cmd_to_run,
@@ -273,10 +288,12 @@ def run_cmd_through_popen(cmd_to_run, logger):
     log_or_print(f"Process started by runner has id: {process.pid}", logger)
 
     stdout_thread = threading.Thread(
-        target=read_out, args=(process, "stdout", logger)
+        target=read_out,
+        args=(process, "stdout", logger, stdout_buffer_processor),
     )
     stderr_thread = threading.Thread(
-        target=read_out, args=(process, "stderr", logger)
+        target=read_out,
+        args=(process, "stderr", logger, stderr_buffer_processor),
     )
 
     stdout_thread.start()

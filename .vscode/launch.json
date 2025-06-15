@@ -19,6 +19,21 @@
                 "CONDA_DEFAULT_ENV": "${workspaceFolder}/envs/stnd_env"
             },
             // "justMyCode": false
+        },
+        {
+            "name": "Python: runner.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/stnd/run_cmd/main.py",
+            "args": [
+                "--config_path",
+                "${workspaceFolder}/tests/run_from_csv/configs/filled_runner_config.yaml"
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "CONDA_DEFAULT_ENV": "${workspaceFolder}/envs/stnd_env",
+                "PROJECT_ROOT_PROVIDED_FOR_STUNED": "${workspaceFolder}"
+            }
         }
     ]
 }
