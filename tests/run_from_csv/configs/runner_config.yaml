@@ -1,0 +1,7 @@
+params:
+  random_seed: 42
+
+logging:
+  gdrive_storage_folder: null
+  use_wandb: False
+  use_tb: False
