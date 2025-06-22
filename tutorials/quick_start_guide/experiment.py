@@ -71,9 +71,6 @@ def demo_experiment(
             import wandb
 
             wandb_stats_to_log = {
-                "Confusing sample before optimization": wandb.Image(
-                    colored_image, caption=f"Initialization type: {init_type}"
-                ),
                 "mean": mean,
             }
 

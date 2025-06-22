@@ -6,5 +6,8 @@ image:
 initialization_type: <will be specified by deltas>
 logging:
   use_wandb: false
+  # use_wandb: true
+  # wandb:
+  #   netrc_path: ~/.netrc
 params:
   random_seed: 42
