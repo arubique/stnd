@@ -1,0 +1,4 @@
+path_to_default_config,path_to_main,whether_to_run,delta:initialization_type,delta:image/color
+./tutorials/quick_start_guide/default_config.yml,./tutorials/quick_start_guide/experiment.py,1,zeros,red
+./tutorials/quick_start_guide/default_config.yml,./tutorials/quick_start_guide/experiment.py,1,random,orange
+./tutorials/quick_start_guide/default_config.yml,./tutorials/quick_start_guide/experiment.py,1,ones,green
