@@ -84,3 +84,33 @@ Use this string instead of the CSV path in the [command from quick start guide](
 ```
 export ENV=<your env> && export PROJECT_ROOT_PROVIDED_FOR_STUNED=<repo with experiments> && conda activate $ENV && python -m stnd.run_from_csv.__main__ --csv_path <link to google sheet>::<name of the worksheet> --run_locally --conda_env $ENV
 ```
+
+This will have the same effect as using `results.csv` in the [command from the Quick Start Guide](../quick_start_guide/QUICK_START_GUIDE.md#run-experiment), but all the modifications to the result table will operate on the remote Google Sheet instead.
+
+## Moving default config to Google Drive
+
+Similar to the results table, `default_config` described in [this section](../quick_start_guide/QUICK_START_GUIDE.md#prepare-default-config) can also be stored in Google Drive.
+
+1. Make a copy of the [demo default config](https://drive.google.com/file/d/1F1qJn7qoGHLovArnwzxGhAv7QOu4MnJ-/view?usp=drive_link).
+2. Share it with your service account, just like you did for Google Sheets in the [previous section](#moving-results-table-to-google-sheets).
+3. Copy the link to the file and paste it into the `path_to_default_config` column, replacing the local path `./tutorials/quick_start_guide/default_config.yml`.
+
+This will result in the same behavior as before. The only difference is that the default config is now stored in Google Drive and can be edited directly in the browser, without opening an IDE.
+
+## Storing stdout and stderr logs in Google Drive
+
+Finally, `stdout` and `stderr` logs can also be synced with Google Drive, making them accessible from a browser or phone without searching the local filesystem.
+
+To enable this:
+
+1. Create a folder in Google Drive.
+2. Share access to this folder with the service account, as described in the [section about moving results table to Google Sheets](#moving-results-table-to-google-sheets).
+3. Add the link to this folder in `logging` dict of your config files like this:
+
+```yaml
+...
+logging:
+    gdrive_storage_folder: <link to your Google Drive folder with logs>
+    use_wandb: True
+    ...
+```
