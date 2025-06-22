@@ -4,4 +4,4 @@ This repository contains utility code for running and organizing structured expe
 
 As an output you get Google Sheet or CSV table that you can extend with new experiments later. Each run corresponds to a row containing the run arguments, links to logs and Weights & Biases (if enabled), and any metrics or values the user chooses to store from the script output. All logs by default store full experiment config, python environment, GitHub commit hash, and the associated code diff to make results reproducible.
 
-See [scheduler guide](./stnd/run_from_csv/RUN_FROM_CSV_README.md) for details.
+See [scheduler guide](./stnd/run_from_csv/README.md) for details.
