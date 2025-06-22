@@ -10,7 +10,7 @@ Start by creating a script for your experiment. It can be anything - from fittin
 
 ### Defining demo_experiment function
 
-```
+```python
 def demo_experiment(
     experiment_config, logger, processes_to_kill_before_exiting
 ):
@@ -29,7 +29,7 @@ The `demo_experiment` function contains all the necessary code for the operation
 
 To make `./experiments.py` runnable by our scheduler, the `demo_experiment` function should be wrapped and called like this:
 
-```
+```python
 def main():
     prepare_wrapper_for_experiment(check_config_for_demo_experiment)(
         demo_experiment
@@ -44,7 +44,7 @@ The function `prepare_wrapper_for_experiment` takes function `check_config_for_d
 
 The goal of `check_config_for_demo_experiment` is to perform preliminary validation on the experiment_config dictionary and raise errors if its structure is invalid. You can implement any checks you need — the only constraint is that the function must accept the following arguments:
 
-```
+```python
 def check_config_for_demo_experiment(config, config_path, logger):
 ```
 
@@ -58,7 +58,7 @@ Before running the experiment, you also need to specify a default config file. T
 
 For demonstration, we've provided `./default_config.yml` that specifies `experiment_config` dict used by `experiment.py`:
 
-```
+```yaml
 image:
   color: red
   shape:
@@ -141,17 +141,10 @@ Additionally, a `results.csv.lock` file will be created alongside `results.csv` 
 
 ### Running experiments with wandb integration
 
-You can also log values not only to the `.csv` file but to [Weights & Biases (wandb)](https://wandb.ai/site/) as well. To enable this:
-
-1. Install wandb:
+You can also log values not only to the `.csv` file but to [Weights & Biases (wandb)](https://wandb.ai/site/) as well. To enable this in your `default_config.yml`, set:
 
 ```
-pip install wandb
-```
-
-2. In your `default_config.yml`, set:
-
-```
+logging:
   use_wandb: true
   wandb:
     netrc_path: <path to wandb's .netrc file>
@@ -159,7 +152,7 @@ pip install wandb
 
 The contents of the wandb's `.netrc` file should look like this:
 
-```
+```yaml
 machine api.wandb.ai
   login user
   password <your wandb token>
@@ -171,16 +164,32 @@ And then run the same command with `stnd.run_from_csv.__main__` as in the [Runni
 export ENV=<your env> && export PROJECT_ROOT_PROVIDED_FOR_STUNED=<repo with experiments> && conda activate $ENV && python -m stnd.run_from_csv.__main__ --csv_path $PROJECT_ROOT_PROVIDED_FOR_STUNED/tutorials/quick_start_guide/results.csv --run_locally --conda_env $ENV
 ```
 
-Then the results.csv will be modified into filled_results_wandb.csv
+Then the results.csv will be modified into `filled_results_wandb.csv`:
 
-?? example
+| path_to_default_config | path_to_main | whether_to_run | delta:initialization_type | delta:image/color | status | run_folder | job id | WandB url | mean of latest tensor | walltime |
+|------------------------|--------------|----------------|---------------------------|-------------------|--------|------------|--------|-----------|---------------------|----------|
+| ./tutorials/quick_start_guide/default_config.yml | ./tutorials/quick_start_guide/experiment.py | 0 | zeros | red | Completed | /Users/arubique/github/stnd/experiments/quick_start_guide/2025-06-22_19:05:46.306431---783f182d444e7d81a056---93437 | Not found | https://wandb.ai/suerte412/quick_start_guide/runs/kfsko3ur | 0.0 | 0:00:04.046145 |
+| ./tutorials/quick_start_guide/default_config.yml | ./tutorials/quick_start_guide/experiment.py | 1 | random | orange | Fail | /Users/arubique/github/stnd/experiments/quick_start_guide/2025-06-22_19:05:46.306431---ecdcd4cf70e831dd1c91---93438 | Not found | https://wandb.ai/suerte412/quick_start_guide/runs/447kjla3 | ? | ? |
+| ./tutorials/quick_start_guide/default_config.yml | ./tutorials/quick_start_guide/experiment.py | 0 | ones | green | Completed | /Users/arubique/github/stnd/experiments/quick_start_guide/2025-06-22_19:05:46.306390---7f5ed29a4f3114416ba4---93439 | Not found | https://wandb.ai/suerte412/quick_start_guide/runs/kjo9ynr9 | 0.3333333333333333 | 0:00:04.051272 |
 
-Where additional column wandb url will be added and you will have access to the wandb runs that correspond to the experiment in corresponding rows (you can checkout the logged values are supposed to look in wandb website by using e.g. this link <link>). Logging to wandb is performed by this command in `experiment.py`:
+An additional column `WandB url` will be added to the results table, providing direct links to the corresponding Weights & Biases runs for each experiment. You can explore the logged values on the [demo run](https://wandb.ai/suerte412/quick_start_guide/runs/kjo9ynr9) to see how the results are displayed.
 
-```
+Logging to wandb is done inside `experiment.py` using the following command:
+
+```python
 try_to_log_in_wandb(
     logger,
     wandb_stats_to_log,
     step=i
 )
+```
+
+You can log any dictionary with the format `field_name: field_value` to wandb. In the current example, the script logs the value of `mean` 10 times in `experiment.py`:
+
+```python
+for i in range(10):
+    <compute mean>
+    wandb_stats_to_log = {
+        "mean": mean,
+    }
 ```
