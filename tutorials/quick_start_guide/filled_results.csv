@@ -1,0 +1,4 @@
+path_to_default_config,path_to_main,whether_to_run,delta:initialization_type,delta:image/color,status,run_folder,job id,mean of latest tensor,walltime
+./tutorials/quick_start_guide/default_config.yml,./tutorials/quick_start_guide/experiment.py,0,zeros,red,Completed,/Users/arubique/github/stnd/experiments/quick_start_guide/2025-06-22_18:28:51.947154---0ebbd0874dd795a191da---91272,Not found,0.0,0:00:00.306933
+./tutorials/quick_start_guide/default_config.yml,./tutorials/quick_start_guide/experiment.py,1,random,orange,Fail,/Users/arubique/github/stnd/experiments/quick_start_guide/2025-06-22_18:28:51.947164---71d6f31e6ced61f89e58---91274,Not found,?,?
+./tutorials/quick_start_guide/default_config.yml,./tutorials/quick_start_guide/experiment.py,0,ones,green,Completed,/Users/arubique/github/stnd/experiments/quick_start_guide/2025-06-22_18:28:51.947159---587a851afa4b16b2a8c9---91273,Not found,0.3333333333333333,0:00:00.279293

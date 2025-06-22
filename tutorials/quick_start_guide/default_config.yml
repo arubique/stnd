@@ -1,0 +1,10 @@
+image:
+  color: red
+  shape:
+  - 64
+  - 64
+initialization_type: <will be specified by deltas>
+logging:
+  use_wandb: false
+params:
+  random_seed: 42
