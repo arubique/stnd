@@ -4,6 +4,8 @@
 /experiments
 *.lock
 *.DS_Store
+experiment_configs/
+inputs/
 
 
 # Byte-compiled / optimized / DLL files

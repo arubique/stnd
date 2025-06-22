@@ -105,7 +105,6 @@ Substitute `<your env>` with the environment where `stnd` is installed (e.g. the
 The scheduler will:
 
 - Create an `experiments/` folder in the specified repo root to store experiment logs.
-- Create an `experiment_configs/` folder in the specified repo root to store the generated `.yml` config files corresponding to each run.
 - Use the repo in `$PROJECT_ROOT_PROVIDED_FOR_STUNED` to infer the current Git commit and compute code diffs for each run.
 
 Then, run the following command:
