@@ -24,13 +24,13 @@ Same as in [Quick Start Guide](../quick_start_guide/QUICK_START_GUIDE.md) we nee
 For demonstration, we've provided `./runner_config.yml` that specifies the arguments used by `runner_target.py`:
 
 ```yaml
-exec_path: ./executables/runner_target.py
-is_python: True
-conda_env: null
-kwargs: <will be defined in runner_results.csv>
-two_dash_flags: <will be defined in runner_results.csv>
-single_dash_flags: <will be defined in runner_results.csv>
-take_last_dict: <will be defined in runner_results.csv>
+exec_path: <will be defined in runner_results.csv>
+is_python: <will be defined in runner_results.csv>
+conda_env: <will be defined in runner_results.csv>
+kwargs: {}
+two_dash_flags: []
+single_dash_flags: []
+take_last_dict: {}
 logging:
   use_wandb: false
 params:
