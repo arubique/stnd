@@ -1,3 +1,2 @@
 path_to_default_config,path_to_main,whether_to_run,delta:exec_path,delta:conda_env,delta:is_python,delta:kwargs/user_number,delta:two_dash_flags,delta:single_dash_flags,delta:take_last_dict/answer,status,run_folder,job id,walltime,answer
-./tutorials/runner/runner_config.yaml,__RUNNER__,0,./tutorials/runner/runner_target.py,None,True,10,[long_flag],[s],Default,Completed,/Users/arubique/github/stnd/experiments/runner/2025-07-03_18:28:59.879310---cd8fc4805db7a455af70---25069,Not found,0:00:00.181372,?
 ./tutorials/runner/runner_config.yaml,__RUNNER__,0,./tutorials/runner/runner_target.py,None,True,10,[long_flag],[s],answer: (__B__d+),Completed,/Users/arubique/github/stnd/experiments/runner/2025-07-03_18:28:59.879372---dfb9ddbaefdeb8aee21f---25068,Not found,0:00:00.217823,52
