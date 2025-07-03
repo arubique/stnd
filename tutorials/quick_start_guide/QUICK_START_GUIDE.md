@@ -100,14 +100,7 @@ Each row in the table corresponds to running `experiments.py` with a different p
 
 Once the results table `results.csv` is filled in, you're ready to run the experiments.
 
-Substitute `<your env>` with the environment where `stnd` is installed (e.g. the one created by [this script](../../prepare_repo.sh)), and `<repo with experiments>` with the path to the repository containing your experiment script (e.g., `experiment.py` in this case, so you should use path to `stnd` repo now).
-
-The scheduler will:
-
-- Create an `experiments/` folder in the specified repo root to store experiment logs.
-- Use the repo in `$PROJECT_ROOT_PROVIDED_FOR_STUNED` to infer the current Git commit and compute code diffs for each run.
-
-Then, run the following command:
+Run the following command, after substituting `<your env>` with the environment where `stnd` is installed (e.g. the one created by [this script](../../prepare_repo.sh)), and `<repo with experiments>` with the path to the repository containing your experiment script (e.g., `experiment.py` in this case, so you should use path to `stnd` repo now):
 
 ```
 export ENV=<your env> && export PROJECT_ROOT_PROVIDED_FOR_STUNED=<repo with experiments> && conda activate $ENV && python -m stnd.run_from_csv.__main__ --csv_path $PROJECT_ROOT_PROVIDED_FOR_STUNED/tutorials/quick_start_guide/results.csv --run_locally --conda_env $ENV
@@ -118,7 +111,12 @@ export ENV=<your env> && export PROJECT_ROOT_PROVIDED_FOR_STUNED=<repo with expe
   To run experiments on a cluster, see the [cluster guide](../cluster/CLUSTER.md).
 - `--conda_env`: Anaconda env to use when running the experiment.py.
 
-The scheduler modifies `results.csv` in-place, and the updated table will look like `filled_results.csv` with all added columns and logged values:
+Upon running the command above the scheduler will:
+
+- Create an `experiments/` folder in the specified repo root to store experiment logs.
+- Use the repo in `$PROJECT_ROOT_PROVIDED_FOR_STUNED` to infer the current Git commit and compute code diffs for each run.
+
+In addition to that the scheduler will modify `results.csv` in-place, and the updated table will look like `filled_results.csv` with all added columns and logged values:
 
 | path_to_default_config | path_to_main | whether_to_run | delta:initialization_type | delta:image/color | status | run_folder | job id | mean of latest tensor | walltime |
 |------------------------|--------------|----------------|---------------------------|-------------------|--------|------------|--------|---------------------|----------|
