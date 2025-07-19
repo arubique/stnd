@@ -75,7 +75,7 @@ Now we are ready to synchronize results table with remote Google Sheets. For dem
 <img src="./step_screenshots/share_gsheet.png" alt="Share google sheet">
 </details>
 
-Create a string in the format: `"<link to google sheet>::<name of the worksheet>"` (quotes and `::` are important)
+Create a string in the format: `"<link to google sheet>::<name of the worksheet>"` (quotes and `::` are important, the latter separates the sheet's url from the worksheet's name)
 
 For example: `"https://docs.google.com/spreadsheets/d/1vfwGoh_5Nb0t0-Ohcj42jhOakgbyB6w4mlnt3lbskAc/edit?gid=0#gid=0::Results_csv"`. If the worksheet name contains spaces, wrap the entire string in quotes before using it in the terminal.
 
