@@ -96,6 +96,8 @@ Each experiment is defined in a separate row. For each row, the scheduler uses:
 
 Each row in the table corresponds to running `experiments.py` with a different parameter configuration — for example, `initialization_type == zeros` and `image/color == red` for row 1, and `initialization_type == ones` and `image/color == red` for row 3. These parameters are for demonstration purposes only and are designed to alter the script’s output. All other parameters are shared across experiments and defined in `default_config.yml`.
 
+**Important:** To avoid issues with experiment submission, make sure the results table does **not** contain commas (`,`) or quotation marks (`"`).
+
 ## Run experiment
 
 Once the results table `results.csv` is filled in, you're ready to run the experiments.
