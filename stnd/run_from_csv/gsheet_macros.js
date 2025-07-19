@@ -192,19 +192,29 @@ function parseAnyStringToList(inputString) {
     }
 }
 
+function parseNumber(str) {
+  let num = Number(str);
+  if (isNaN(num)) {
+    throw new Error("Invalid number format: " + str);
+  }
+  return num;
+}
+
 
 function parseRange(inputString) {
     // Regular expression to match the range pattern
-    const pattern = /\{<(\d+)\s+(\d+)\s+(\d+)(?: (True|False))?>\}/;
+    // const pattern = /\{<(\d+)\s+(\d+)\s+(\d+)(?: (True|False))?>\}/;
+    const pattern = /\{<([\d.eE+-]+)\s+([\d.eE+-]+)\s+([\d.eE+-]+)(?:\s+(True|False))?>\}/;
+
 
     // Match the pattern in the inputString
     const match = inputString.match(pattern);
 
     // Check if the inputString matches the pattern
     if (match) {
-        const start = parseInt(match[1]);
-        const end = parseInt(match[2]);
-        const step = parseInt(match[3]);
+        const start = parseNumber(match[1]);
+        const end = parseNumber(match[2]);
+        const step = parseNumber(match[3]);
 
         var isLogarithmic = false;
         if (match[4] == "True" || match[4] == "true") {
