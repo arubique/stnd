@@ -112,6 +112,13 @@ def parse_args():
         help="conda environment name",
     )
     parser.add_argument(
+        "--venv_env",
+        type=str,
+        required=False,
+        default=None,
+        help="path to virtual environment activation script (e.g., /path/to/venv/bin/activate)",
+    )
+    parser.add_argument(
         "--run_locally",
         action="store_true",
         help="whether to run this script locally",
@@ -154,12 +161,19 @@ def get_default_log_file_path():
 def main():
     args = parse_args()
 
+    # Validate that only one of conda_env or venv_env is provided
+    if args.conda_env is not None and args.venv_env is not None:
+        raise Exception("Cannot specify both --conda_env and --venv_env. Please choose one.")
+    
+    # For cluster types, require either conda_env or venv_env
+    env_provided = args.conda_env is not None or args.venv_env is not None
+    
     if args.cluster_type == "slurm":
-        assert args.conda_env is not None, "Conda env is required for Slurm"
+        assert env_provided, "Either conda env or venv env is required for Slurm"
         make_final_cmd = make_final_cmd_slurm
         allowed_prefixes = (SLURM_PREFIX, DELTA_PREFIX)
     elif args.cluster_type == "condor":
-        assert args.conda_env is not None, "Conda env is required for Condor"
+        assert env_provided, "Either conda env or venv env is required for Condor"
         make_final_cmd = make_final_cmd_condor
         allowed_prefixes = (CONDOR_PREFIX, DELTA_PREFIX, ENV_VAR_PREFIX)
     else:
@@ -199,6 +213,7 @@ def main():
                 row_number,
                 csv_path,
                 args.conda_env,
+                args.venv_env,
                 args.run_locally,
                 args.log_file_path,
                 spreadsheet_url,
@@ -341,6 +356,7 @@ def process_csv_row(
     row_number,
     input_csv_path,
     conda_env,
+    venv_env,
     run_locally,
     log_file_path,
     spreadsheet_url,
@@ -399,7 +415,7 @@ def process_csv_row(
             worksheet_name,
         )
         exp_exec_path = normalize_path(csv_row[MAIN_PATH_COLUMN])
-        cmd_as_string = make_task_cmd(new_config_path, conda_env, exp_exec_path)
+        cmd_as_string = make_task_cmd(new_config_path, conda_env, venv_env, exp_exec_path)
 
         log_folder = os.path.dirname(log_file_path)
         if not os.path.exists(log_folder) and log_folder != "":
@@ -417,6 +433,7 @@ def process_csv_row(
                 exp_config_path=new_config_path,
                 exp_main_path=exp_exec_path,
                 conda_env=conda_env,
+                venv_env=venv_env,
             )
 
     if final_cmd is not None:
@@ -432,7 +449,7 @@ def process_csv_row(
 
 
 def fill_condor_sh_script(
-    condor_sh_file, conda_env, env_vars, exp_main_path, exp_config_path
+    condor_sh_file, conda_env, venv_env, env_vars, exp_main_path, exp_config_path
 ):
     """Fill shell script with required commands and environment setup."""
     condor_sh_file.write("#!/bin/bash\n")
@@ -440,10 +457,15 @@ def fill_condor_sh_script(
 
     # Load environment
     condor_sh_file.write("# Load environment\n")
-    condor_sh_file.write(
-        f"source {os.path.expanduser('~/python/python/etc/profile.d/conda.sh')}\n"
-    )
-    condor_sh_file.write(f"conda activate {conda_env}\n\n")
+    if conda_env is not None and conda_env not in itself_and_lower_upper_case("None"):
+        condor_sh_file.write(
+            f"source {os.path.expanduser('~/python/python/etc/profile.d/conda.sh')}\n"
+        )
+        condor_sh_file.write(f"conda activate {conda_env}\n\n")
+    elif venv_env is not None and venv_env not in itself_and_lower_upper_case("None"):
+        condor_sh_file.write(f"source {venv_env}\n\n")
+    else:
+        condor_sh_file.write("# No environment activation specified\n\n")
 
     # Environment variables
     for env_var, value in env_vars.items():
@@ -495,6 +517,7 @@ def make_final_cmd_condor(
     exp_config_path,
     exp_main_path,
     conda_env,
+    venv_env,
 ):
     condor_args_dict = make_condor_args_dict(csv_row, exp_name, log_file_path)
     env_vars = extract_from_csv_row_by_prefix(
@@ -515,6 +538,7 @@ def make_final_cmd_condor(
         fill_condor_sh_script(
             condor_sh_file=tmp_sh_file,
             conda_env=conda_env,
+            venv_env=venv_env,
             env_vars=env_vars,
             exp_main_path=exp_main_path,
             exp_config_path=exp_config_path,
@@ -541,6 +565,7 @@ def make_final_cmd_slurm(
     exp_config_path=None,
     exp_main_path=None,
     conda_env=None,
+    venv_env=None,
 ):
     slurm_args_dict = make_slurm_args_dict(csv_row, exp_name, log_file_path)
     if USE_SRUN:
@@ -638,16 +663,19 @@ def replace_placeholders(csv_row, placeholder, new_value):
             csv_row[column_name] = str(value).replace(placeholder, new_value)
 
 
-def make_task_cmd(new_config_path, conda_env, exec_path, logger=None):
+def make_task_cmd(new_config_path, conda_env, venv_env, exec_path, logger=None):
     exec_args = "--config_path {}".format(new_config_path)
     main_command = "python {} {}".format(exec_path, exec_args)
-    if conda_env is None or conda_env in itself_and_lower_upper_case("None"):
-        error_or_print(f"Running without conda env: {main_command}", logger)
-        return main_command
-    else:
+    
+    if conda_env is not None and conda_env not in itself_and_lower_upper_case("None"):
         return "{} {} && {}".format(
             NEW_SHELL_INIT_COMMAND, conda_env, main_command
         )
+    elif venv_env is not None and venv_env not in itself_and_lower_upper_case("None"):
+        return "source {} && {}".format(venv_env, main_command)
+    else:
+        error_or_print(f"Running without environment activation: {main_command}", logger)
+        return main_command
 
 
 def make_condor_args_dict(csv_row, exp_name, log_file):
