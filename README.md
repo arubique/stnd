@@ -18,7 +18,7 @@ To install this package please run the following command with Python>=3.10:
 
 ```
 @misc{stnd2025experiment,
-  author       = {Alexander Rubinstein, Arnas Uselis},
+  author       = {Rubinstein, Alexander and Uselis, Arnas},
   title        = {STAI-tuned Experiment Scheduler: Structured Experiment Management with Google Sheets, Weights \& Biases, and HPC Integration},
   year         = {2025},
   howpublished = {\url{https://github.com/arubique/stnd}},  % replace with actual URL if different
