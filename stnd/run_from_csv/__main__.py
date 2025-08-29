@@ -82,6 +82,7 @@ CURRENT_ROW_PLACEHOLDER = "__ROW__"
 CURRENT_WORKSHEET_PLACEHOLDER = "__WORKSHEET__"
 RUNNER_PLACEHOLDER = "__RUNNER__"
 COMMA_PLACEHOLDER = "__COMMA__"
+QUOTE_PLACEHOLDER = "__Q__"
 BACKSLASH_PLACEHOLDER = "__B__"
 PATH_TO_RUNNER_MAIN = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "run_cmd", "main.py"
@@ -364,6 +365,7 @@ def process_csv_row(
         )
         replace_placeholders(csv_row, RUNNER_PLACEHOLDER, PATH_TO_RUNNER_MAIN)
         replace_placeholders(csv_row, COMMA_PLACEHOLDER, ",")
+        replace_placeholders(csv_row, QUOTE_PLACEHOLDER, "\"")
         replace_placeholders(csv_row, BACKSLASH_PLACEHOLDER, "\\")
 
         default_config_path_or_url = csv_row[PATH_TO_DEFAULT_CONFIG_COLUMN]
