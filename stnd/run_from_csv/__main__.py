@@ -6,6 +6,7 @@ import subprocess
 import shutil
 import sys
 import multiprocessing as mp
+import re
 
 
 # local modules
@@ -365,8 +366,9 @@ def process_csv_row(
         )
         replace_placeholders(csv_row, RUNNER_PLACEHOLDER, PATH_TO_RUNNER_MAIN)
         replace_placeholders(csv_row, COMMA_PLACEHOLDER, ",")
-        replace_placeholders(csv_row, QUOTE_PLACEHOLDER, "\"")
+        replace_placeholders(csv_row, QUOTE_PLACEHOLDER, '"')
         replace_placeholders(csv_row, BACKSLASH_PLACEHOLDER, "\\")
+        replace_column_placeholders(csv_row)
 
         default_config_path_or_url = csv_row[PATH_TO_DEFAULT_CONFIG_COLUMN]
         if not default_config_path_or_url in shared_default_config_paths:
@@ -638,6 +640,41 @@ def replace_placeholders(csv_row, placeholder, new_value):
     for column_name, value in csv_row.items():
         if placeholder in str(value):
             csv_row[column_name] = str(value).replace(placeholder, new_value)
+
+
+def replace_column_placeholders(csv_row):
+    """Replace __COL:<col_name>__ placeholders with values from the corresponding columns.
+
+    Args:
+        csv_row: Dictionary containing column names and their values
+
+    Raises:
+        ValueError: If a referenced column doesn't exist in the csv_row
+    """
+
+    for column_name, value in csv_row.items():
+        if isinstance(value, str):
+            # Find all __COL:<col_name>__ patterns
+            col_placeholders = re.findall(r"__COL:([^_]+)__", value)
+
+            # Replace each placeholder found
+            updated_value = value
+            for col_name in col_placeholders:
+                if col_name not in csv_row:
+                    raise ValueError(
+                        f"Column '{col_name}' referenced in __COL:{col_name}__ placeholder does not exist in the CSV row"
+                    )
+
+                placeholder = f"__COL:{col_name}__"
+                col_value = csv_row[col_name]
+                if col_value is None:
+                    col_value = "<EMPTY>"
+                else:
+                    col_value = str(col_value)
+
+                updated_value = updated_value.replace(placeholder, col_value)
+
+            csv_row[column_name] = updated_value
 
 
 def make_task_cmd(new_config_path, conda_env, exec_path, logger=None):

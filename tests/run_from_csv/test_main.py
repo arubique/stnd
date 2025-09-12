@@ -468,3 +468,58 @@ def test_run_from_csv_is_callable(test_env):
         cmd.split(), capture_output=True, text=True, cwd=test_env["temp_dir"]
     )
     assert "the following arguments are required: --csv_path" in result.stderr
+
+
+@pytest.mark.skipif(SKIP_TESTS, reason="Skip tests when debugging")
+def test_column_placeholder_replacement():
+    """Test the __COL:<col_name>__ placeholder replacement functionality."""
+    from stnd.run_from_csv.__main__ import replace_column_placeholders
+
+    # Test successful replacement
+    csv_row = {
+        "col1": "value1",
+        "col2": "value2",
+        "col3": "This is __COL:col1__ and __COL:col2__",
+        "col4": "Single __COL:col1__ replacement",
+    }
+
+    replace_column_placeholders(csv_row)
+
+    assert csv_row["col3"] == "This is value1 and value2"
+    assert csv_row["col4"] == "Single value1 replacement"
+    assert (
+        csv_row["col1"] == "value1"
+    )  # Original values should remain unchanged
+    assert csv_row["col2"] == "value2"
+
+    # Test with None values
+    csv_row_with_none = {
+        "col1": None,
+        "col2": "value2",
+        "col3": "This is __COL:col1__ and __COL:col2__",
+    }
+
+    replace_column_placeholders(csv_row_with_none)
+    assert csv_row_with_none["col3"] == "This is <EMPTY> and value2"
+
+    # Test error when column doesn't exist
+    csv_row_missing = {
+        "col1": "value1",
+        "col2": "This references __COL:nonexistent__ column",
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="Column 'nonexistent' referenced in __COL:nonexistent__ placeholder does not exist",
+    ):
+        replace_column_placeholders(csv_row_missing)
+
+    # Test with non-string values (should be ignored)
+    csv_row_mixed = {
+        "col1": "value1",
+        "col2": 123,
+        "col3": "This is __COL:col1__ and __COL:col2__",
+    }
+
+    replace_column_placeholders(csv_row_mixed)
+    assert csv_row_mixed["col3"] == "This is value1 and 123"
