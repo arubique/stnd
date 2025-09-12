@@ -21,6 +21,7 @@ Before starting this tutorial, make sure you:
 | `__COMMA__`    | Substituted with a comma (`,`). Useful when you need to pass a comma-separated list inside a single cell without breaking the .csv table structure. |
 | `__B__`        | Substituted with a backslash (`\`). Handy for escaping characters (e.g. in regexes as [here](../runner/RUNNER.md#take_last_dict)) or creating multi-line commands. |
 | `__RUNNER__`   | The path to the runner script, as described in the [runner tutorial](../runner/RUNNER.md#prepare-results-table). Allows for flexible referencing of the execution script without hardcoding paths. |
+| `__COL:<col_name>__` | Substituted with the value from the column named `<col_name>` in the same row. Useful for referencing values from other columns within the same row. For example, if you have columns `model_name` and `checkpoint_path`, you can use `__COL:checkpoint_path__/__COL:model_name__.pkl` to create a path that combines values from both columns. If the referenced column doesn't exist, an error will be raised. |
 
 ## Reference table
 
