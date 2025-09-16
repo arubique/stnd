@@ -28,6 +28,7 @@ jobs:
       run: |
         pytest tests/run_from_csv/test_main.py -v
         pytest tests/test_import_utils.py -v
+        pytest tests/test_data_utils.py -v
 
     # - name: Check test coverage
     #   run: |
