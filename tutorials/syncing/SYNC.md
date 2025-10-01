@@ -64,7 +64,7 @@ To write to remote Google Sheets or Drive, you need to create a service account 
     <img src="./step_screenshots/create_key.png" alt="Create json">
     </details>
 
-9. Put the downloaded json with credentials inside `~/.config/gauth/service_key.json`
+9. Put the downloaded json with credentials inside `~/.config/gauth/service_key.json` (different path can be specified via `GAUTH_CREDENTIALS_PATH` variable).
 
 ## Moving results table to Google Sheets
 

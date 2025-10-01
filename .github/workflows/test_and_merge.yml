@@ -10,6 +10,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    environment: staging
     steps:
     - uses: actions/checkout@v3
 
@@ -24,11 +25,27 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-test.txt
 
+    - name: Write service account key (from secret)
+      env:
+        SA_JSON: ${{ secrets.SA_JSON }}
+      run: |
+        echo "$SA_JSON" > /tmp/sa.json
+        chmod 600 /tmp/sa.json
+
     - name: Run tests
+      env:
+          GAUTH_CREDENTIALS_PATH: /tmp/sa.json
+          STND_DEFAULT_NUM_ATTEMTPS: 3
       run: |
         pytest tests/run_from_csv/test_main.py -v
         pytest tests/test_import_utils.py -v
         pytest tests/test_data_utils.py -v
+        pytest tests/test_gspread_client.py -v
+
+    - name: Remove credentials
+      if: always()
+      run: |
+        shred -u /tmp/sa.json || rm -f /tmp/sa.json
 
     # - name: Check test coverage
     #   run: |
