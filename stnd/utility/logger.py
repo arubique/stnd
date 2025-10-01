@@ -1161,6 +1161,12 @@ def extract_by_regex_from_url(url, regexes):
     raise Exception(f"No valid key found in URL: {url}.")
 
 
+def get_gauth_credentials_path():
+    return os.environ.get(
+        "GAUTH_CREDENTIALS_PATH", DEFAULT_GOOGLE_CREDENTIALS_PATH
+    )
+
+
 class GspreadClient:
     def __init__(self, logger, gspread_credentials):
         self.logger = logger
@@ -1169,10 +1175,9 @@ class GspreadClient:
 
     @retrier_factory_with_auto_logger()
     def _create_client(self):
-        if os.path.exists(DEFAULT_GOOGLE_SERVICE_CREDENTIALS_PATH):
-            return gspread.service_account(
-                filename=DEFAULT_GOOGLE_SERVICE_CREDENTIALS_PATH
-            )
+        credentials_path = get_gauth_credentials_path()
+        if os.path.exists(credentials_path):
+            return gspread.service_account(filename=credentials_path)
 
         _, auth_user_filename = make_google_auth(
             self.gspread_credentials, logger=self.logger

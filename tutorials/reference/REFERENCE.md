@@ -29,3 +29,9 @@ Before starting this tutorial, make sure you:
 |--------------------|-------------|
 | `[a b c]` | Creates a list with elements `a`, `b`, and `c`. Note that commas are not used to accommodate the constraint that the results table cannot contain commas, as explained [here](../quick_start_guide/QUICK_START_GUIDE.md#prepare-results-table). |
 
+## Environment variables table
+| Environment Variable | Description |
+|---------------------|-------------|
+| `GAUTH_CREDENTIALS_PATH` | Path to Google authentication credentials file. If not set, defaults to `~/.config/gauth/credentials.json`. Used for authenticating with Google services like Google Sheets and Google Drive. E.g., see how to create this file in [this guide](../syncing/SYNC.md#prepare-service-account-for-google-sheets-and-docs). |
+| `PROJECT_ROOT_PROVIDED_FOR_STUNED` | Path to the root directory of the project where experiments will be run. Used by the scheduler to locate experiment files and store outputs. Required when running experiments, as shown in the [Quick Start Guide](../quick_start_guide/QUICK_START_GUIDE.md#run-experiment). |
+
