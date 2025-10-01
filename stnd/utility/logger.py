@@ -1163,7 +1163,7 @@ def extract_by_regex_from_url(url, regexes):
 
 def get_gauth_credentials_path():
     return os.environ.get(
-        "GAUTH_CREDENTIALS_PATH", DEFAULT_GOOGLE_CREDENTIALS_PATH
+        "GAUTH_CREDENTIALS_PATH", DEFAULT_GOOGLE_SERVICE_CREDENTIALS_PATH
     )
 
 
