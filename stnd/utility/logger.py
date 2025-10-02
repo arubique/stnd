@@ -1384,11 +1384,12 @@ class GdriveClient:
 
     @retrier_factory_with_auto_logger()
     def _create_client(self):
-        if os.path.exists(DEFAULT_GOOGLE_SERVICE_CREDENTIALS_PATH):
+        credentials_path = get_gauth_credentials_path()
+        if os.path.exists(credentials_path):
             settings = {
                 "client_config_backend": "service",
                 "service_config": {
-                    "client_json_file_path": DEFAULT_GOOGLE_SERVICE_CREDENTIALS_PATH,
+                    "client_json_file_path": credentials_path,
                 },
             }
             gauth = GoogleAuth(settings=settings)

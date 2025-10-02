@@ -41,6 +41,7 @@ jobs:
         pytest tests/test_import_utils.py -v
         pytest tests/test_data_utils.py -v
         pytest tests/test_gspread_client.py -v
+        pytest tests/test_gdrive_utils.py -v
 
     - name: Remove credentials
       if: always()
