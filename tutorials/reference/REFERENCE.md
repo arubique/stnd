@@ -37,7 +37,7 @@ Before starting this tutorial, make sure you:
 ## Environment variables table
 | Environment Variable | Description |
 |---------------------|-------------|
-| `GAUTH_CREDENTIALS_PATH` | Path to Google authentication credentials file. If not set, defaults to `~/.config/gauth/credentials.json`. Used for authenticating with Google services like Google Sheets and Google Drive. E.g., see how to create this file in [this guide](../syncing/SYNC.md#prepare-service-account-for-google-sheets-and-docs). |
+| `GAUTH_CREDENTIALS_PATH` | Path to Google authentication credentials file for a service account. If not set, defaults to `~/.config/gauth/service_key.json`. Used for authenticating with Google services like Google Sheets and Google Drive using a service account. E.g., see how to create this file in [this guide](../syncing/SYNC.md#prepare-service-account-for-google-sheets-and-docs). |
 | `PROJECT_ROOT_PROVIDED_FOR_STUNED` | Path to the root directory of the project where experiments will be run. Used by the scheduler to locate experiment files and store outputs. Required when running experiments, as shown in the [Quick Start Guide](../quick_start_guide/QUICK_START_GUIDE.md#run-experiment). |
 | `STND_DEFAULT_NUM_ATTEMPTS` | Number of retry attempts for failed operations. Defaults to 10 if not set. Used by the retry mechanism to determine how many times to retry a failed operation before giving up. |
 
