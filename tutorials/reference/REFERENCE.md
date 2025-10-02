@@ -28,6 +28,11 @@ Before starting this tutorial, make sure you:
 | Notation | Description |
 |--------------------|-------------|
 | `[a b c]` | Creates a list with elements `a`, `b`, and `c`. Note that commas are not used to accommodate the constraint that the results table cannot contain commas, as explained [here](../quick_start_guide/QUICK_START_GUIDE.md#prepare-results-table). |
+| `delta:` | Prefix used to specify changes to the default configuration. For example, if you have a default config with `learning_rate: 0.1` and want to change it to 0.01 for a specific experiment, you can add a column `delta:learning_rate` with value `0.01`. The scheduler will automatically update the default config with this new value. For nested configurations, use `/` as a separator inside config, e.g., `delta:optimizer/learning_rate`. For examples of using the `delta:` prefix, see [this tutorial](../quick_start_guide/QUICK_START_GUIDE.md#prepare-results-table). |
+| `slurm:` | Prefix used to specify SLURM job submission parameters. For example, `slurm:partition` with value `gpu` will set the partition to `gpu` when submitting the job to SLURM. Common parameters include `partition`, `time` (job time limit), `mem` (memory request), `cpus-per-task`, etc. For examples of using the `slurm:` prefix, see [this tutorial](../cluster/CLUSTER.md#configure-jobs-with-slurm). |
+| `condor:` | Prefix used to specify HTCondor job submission parameters. For example, `condor:bid` with value `10` will put a bid of 10 when submitting the job to HTCondor. This prefix is analogous to `slurm:`. |
+| `cmd_env_var:` | Prefix used to specify environment variables that should be set before running the experiment command. For example, `cmd_env_var:CUDA_VISIBLE_DEVICES` with value `0` will set `CUDA_VISIBLE_DEVICES=0` in the environment before executing the experiment command. This is useful for controlling environment-specific behavior like GPU selection, library paths, etc. Multiple environment variables can be set by adding multiple columns with this prefix. The environment variables are exported before the command runs and are available to the command and any subprocesses it spawns. |
+
 
 ## Environment variables table
 | Environment Variable | Description |
