@@ -50,6 +50,7 @@ from stnd.utility.logger import (
     CONDOR_BID_KEY,
     ENV_VAR_PREFIX,
     CMD_ENV_VAR_PREFIX,
+    COMMON_PREFIXES,
     make_logger,
     make_gdrive_client,
     sync_local_file_with_gdrive,
@@ -160,11 +161,11 @@ def main():
     if args.cluster_type == "slurm":
         assert args.conda_env is not None, "Conda env is required for Slurm"
         make_final_cmd = make_final_cmd_slurm
-        allowed_prefixes = (SLURM_PREFIX, DELTA_PREFIX)
+        allowed_prefixes = COMMON_PREFIXES + [SLURM_PREFIX]
     elif args.cluster_type == "condor":
         assert args.conda_env is not None, "Conda env is required for Condor"
         make_final_cmd = make_final_cmd_condor
-        allowed_prefixes = (CONDOR_PREFIX, DELTA_PREFIX, ENV_VAR_PREFIX)
+        allowed_prefixes = COMMON_PREFIXES + [CONDOR_PREFIX, ENV_VAR_PREFIX]
     else:
         raise Exception(f"Unknown cluster type: {args.cluster_type}")
 

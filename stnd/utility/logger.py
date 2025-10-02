@@ -54,7 +54,6 @@ sys.path.pop(0)
 CONDOR_PREFIX = "condor"
 CONDOR_BID_KEY = "bid"
 ENV_VAR_PREFIX = "env_var"  # used in bash script e.g. for Condor
-CMD_ENV_VAR_PREFIX = "cmd_env_var"  # used in command line
 
 
 PROGRESS_FREQUENCY = 0.01
@@ -181,6 +180,9 @@ SPREADSHEETS_URL = "https://docs.google.com/spreadsheets"
 WORKSHEET_SEPARATOR = "::"
 DELTA_PREFIX = "delta"
 SLURM_PREFIX = "slurm"
+CMD_ENV_VAR_PREFIX = "cmd_env_var"  # used in command line
+COMMON_PREFIXES = [DELTA_PREFIX, CMD_ENV_VAR_PREFIX]
+
 PREFIX_SEPARATOR = ":"
 OLD_PREFIX = "Old "
 PREV_RUN_FOLDER_KEY = "prev_run_folder"

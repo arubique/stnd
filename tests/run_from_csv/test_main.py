@@ -58,6 +58,7 @@ def create_test_csv(csv_path, config_path, cluster_type="slurm"):
             "delta:logging/use_wandb": ["FALSE"] * TOTAL_ROWS,
             "delta:initialization_type": ["zeros", "random", "ones"],
             "delta:image/color": ["red"] * TOTAL_ROWS,
+            "cmd_env_var:CUDA_VISIBLE_DEVICES": ["0"] * TOTAL_ROWS,
         }
     elif cluster_type == "runner":
         data = {
@@ -92,6 +93,7 @@ def create_test_csv(csv_path, config_path, cluster_type="slurm"):
             "env_var:CUDA_VISIBLE_DEVICES": [
                 "0__COMMA__1__COMMA__2__COMMA__3__COMMA__4__COMMA__5__COMMA__6__COMMA__7"
             ],
+            "cmd_env_var:CMD_VAR": ["BAR"],
         }
     else:
         raise ValueError(f"Invalid cluster type: {cluster_type}")
@@ -526,6 +528,7 @@ def test_column_placeholder_replacement():
     assert csv_row_mixed["col3"] == "This is value1 and 123"
 
 
+@pytest.mark.skipif(SKIP_TESTS, reason="Skip tests when debugging")
 def test_process_csv_row_includes_cmd_env_exports(tmp_path, monkeypatch):
     from stnd.run_from_csv import __main__ as main_mod
 
