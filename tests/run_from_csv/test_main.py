@@ -164,6 +164,7 @@ def test_env(request):
 def get_python_binary():
     # on github everything is in the base env, but when debugging
     # we need to use the envs/stnd_env env
+    # e.g., can run: export CONDA_DEFAULT_ENV=$PWD/envs/stnd_env && pytest ./tests/run_from_csv/test_main.py
     conda_env = os.environ.get("CONDA_DEFAULT_ENV", "None")
     if conda_env != "None":
         assert os.path.exists(
@@ -523,3 +524,96 @@ def test_column_placeholder_replacement():
 
     replace_column_placeholders(csv_row_mixed)
     assert csv_row_mixed["col3"] == "This is value1 and 123"
+
+
+def test_process_csv_row_includes_cmd_env_exports(tmp_path, monkeypatch):
+    from stnd.run_from_csv import __main__ as main_mod
+
+    # Prepare minimal CSV row with required columns and cmd env vars
+    default_cfg_path = os.path.join(str(tmp_path), "default.yaml")
+    with open(default_cfg_path, "w") as f:
+        f.write("key: val\n")
+
+    csv_row = {
+        main_mod.PATH_TO_DEFAULT_CONFIG_COLUMN: default_cfg_path,
+        main_mod.MAIN_PATH_COLUMN: "<exec>",
+        main_mod.WHETHER_TO_RUN_COLUMN: "1",
+        f"{main_mod.CMD_ENV_VAR_PREFIX}{main_mod.PREFIX_SEPARATOR}MY_ENV": "BAR",
+        f"{main_mod.CMD_ENV_VAR_PREFIX}{main_mod.PREFIX_SEPARATOR}ANOTHER": "Z",
+    }
+
+    # Mocks to isolate command construction
+    monkeypatch.setattr(
+        main_mod,
+        "fetch_default_config_path",
+        lambda path, logger: default_cfg_path,
+    )
+    monkeypatch.setattr(main_mod, "read_yaml", lambda p: {"k": 1})
+    monkeypatch.setattr(main_mod, "normalize_path", lambda p: p)
+    # make_new_config returns (config_dict, new_config_path)
+    new_cfg_path = os.path.join(str(tmp_path), "new_cfg.yaml")
+    monkeypatch.setattr(
+        main_mod, "make_new_config", lambda *args, **kwargs: ({}, new_cfg_path)
+    )
+    # Base command that process_csv_row will wrap with exports and redirection
+    monkeypatch.setattr(
+        main_mod, "make_task_cmd", lambda cfg, env, exec_path: "run_exp_cmd"
+    )
+
+    # Lightweight logger and lock/current_step replacements
+    class DummyLogger:
+        def progress(self, *args, **kwargs):
+            pass
+
+    class DummyLock:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    class DummyVal:
+        def __init__(self, v):
+            self.value = v
+
+    logger = DummyLogger()
+    lock = DummyLock()
+    shared_rows_to_run = []
+    shared_default_config_paths = {}
+    shared_csv_updates = []
+    current_step = DummyVal(0)
+
+    # Act: run in local mode so final_cmd is composed directly with redirection
+    log_file_path = os.path.join(str(tmp_path), "log.out")
+    input_csv_path = os.path.join(str(tmp_path), "in.csv")
+
+    main_mod.process_csv_row(
+        make_final_cmd=lambda *args, **kwargs: "IGNORED",
+        csv_row=csv_row,
+        row_number=1,
+        input_csv_path=input_csv_path,
+        conda_env="None",
+        run_locally=True,
+        log_file_path=log_file_path,
+        spreadsheet_url=None,
+        worksheet_name="Sheet1",
+        logger=logger,
+        lock=lock,
+        shared_rows_to_run=shared_rows_to_run,
+        shared_default_config_paths=shared_default_config_paths,
+        shared_csv_updates=shared_csv_updates,
+        current_step=current_step,
+        total_rows=1,
+    )
+
+    # Assert: one command is produced and contains env exports before the base command
+    assert len(shared_rows_to_run) == 1
+    final_cmd = shared_rows_to_run[0]
+
+    # Expected canonical command string
+    exp1 = "export MY_ENV=BAR"
+    exp2 = "export ANOTHER=Z"
+    base = "run_exp_cmd"
+    expected_cmd = f"{exp1} && {exp2} && {base} &> {log_file_path} &"
+
+    assert final_cmd == expected_cmd

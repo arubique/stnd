@@ -53,7 +53,8 @@ sys.path.pop(0)
 # Condor
 CONDOR_PREFIX = "condor"
 CONDOR_BID_KEY = "bid"
-ENV_VAR_PREFIX = "env_var"
+ENV_VAR_PREFIX = "env_var"  # used in bash script e.g. for Condor
+CMD_ENV_VAR_PREFIX = "cmd_env_var"  # used in command line
 
 
 PROGRESS_FREQUENCY = 0.01

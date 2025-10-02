@@ -49,6 +49,7 @@ from stnd.utility.logger import (
     CONDOR_PREFIX,
     CONDOR_BID_KEY,
     ENV_VAR_PREFIX,
+    CMD_ENV_VAR_PREFIX,
     make_logger,
     make_gdrive_client,
     sync_local_file_with_gdrive,
@@ -404,6 +405,16 @@ def process_csv_row(
         )
         exp_exec_path = normalize_path(csv_row[MAIN_PATH_COLUMN])
         cmd_as_string = make_task_cmd(new_config_path, conda_env, exp_exec_path)
+
+        cmd_env_vars = extract_from_csv_row_by_prefix(
+            csv_row,
+            CMD_ENV_VAR_PREFIX + PREFIX_SEPARATOR,
+            ignore_values=PLACEHOLDERS_FOR_DEFAULT,
+        )
+
+        # Environment variables
+        for cmd_env_var, value in sorted(cmd_env_vars.items()):
+            cmd_as_string = f"export {cmd_env_var}={value} && {cmd_as_string}"
 
         log_folder = os.path.dirname(log_file_path)
         if not os.path.exists(log_folder) and log_folder != "":
