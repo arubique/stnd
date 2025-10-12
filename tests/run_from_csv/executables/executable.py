@@ -67,25 +67,11 @@ def demo_experiment(
             sum(sum(row) for row in channel) for channel in colored_image
         ) / (image_size[0] * image_size[1] * 3)
 
-        # wandb_stats_to_log = {
-        #     "Confusing sample before optimization":
-        #     wandb.Image(
-        #         colored_image,
-        #         caption=
-        #             f"Initialization type: {init_type}"
-        #     ),
-        #     "mean": mean
-        # }
-
-        # # log image + mean in wandb
-        # try_to_log_in_wandb(
-        #     logger,
-        #     wandb_stats_to_log,
-        #     step=i
-        # )
-
         # log latest mean in csv
         try_to_log_in_csv(logger, "mean of latest tensor", mean)
+
+        print("Hello, stdout", file=sys.stdout)
+        print("Hello, stderr", file=sys.stderr)
 
 
 def main():

@@ -242,10 +242,42 @@ class BaseLogger:
     pass
 
 
+class TeeStd:
+    """Captures stdout/stderr and writes to both terminal and file"""
+
+    def __init__(self, terminal_stream, output_file, file_lock=None):
+        self.terminal = terminal_stream
+        self.file_path = output_file
+        self.file_lock = file_lock
+
+    def write(self, message):
+        # Write to terminal
+        self.terminal.write(message)
+        self.terminal.flush()
+
+        # Write to file
+        if self.file_path:
+            lock_context = self.file_lock if self.file_lock else NULL_CONTEXT
+            with lock_context:
+                with open(self.file_path, "a") as f:
+                    f.write(message)
+
+    def flush(self):
+        self.terminal.flush()
+
+    def isatty(self):
+        return self.terminal.isatty()
+
+
 # TODO(Alex | 13.07.2022) inherit from more sophisticated logger
 class RedneckLogger(BaseLogger):
-    def __init__(self, output_folder=None, retry_print=True):
+    def __init__(self, output_folder=None, retry_print=True, capture_std=True):
         warnings.showwarning = self.get_warning_wrapper()
+
+        # std capture
+        self.original_stdout = None
+        self.original_stderr = None
+        self.std_capture_enabled = False
 
         if output_folder:
             self.update_output_folder(output_folder)
@@ -273,6 +305,9 @@ class RedneckLogger(BaseLogger):
         self.stdout_lock = None
         self.stderr_lock = None
 
+        if capture_std:
+            self.enable_std_capture()
+
     def store(self, name, msg):
         assert isinstance(msg, str)
         self.cache[name] = msg
@@ -292,6 +327,36 @@ class RedneckLogger(BaseLogger):
         touch_file(self.stderr_file)
         self.stdout_lock = make_file_lock(self.stdout_file)
         self.stderr_lock = make_file_lock(self.stderr_file)
+        if self.std_capture_enabled:
+            self.disable_std_capture()
+            self.enable_std_capture()
+
+    def enable_std_capture(self):
+        """Redirect sys.stdout to capture all prints (including from libraries)"""
+        if (
+            not self.std_capture_enabled
+            and self.stdout_file
+            and self.stderr_file
+        ):
+            for original_stream, stream, file, lock in [
+                (sys.stdout, "stdout", self.stdout_file, self.stdout_lock),
+                (sys.stderr, "stderr", self.stderr_file, self.stderr_lock),
+            ]:
+                setattr(self, f"original_{stream}", original_stream)
+                setattr(sys, stream, TeeStd(original_stream, file, lock))
+
+            self.std_capture_enabled = True
+
+    def disable_std_capture(self):
+        """Restore original sys.stdout"""
+        if self.std_capture_enabled:
+            for original_stream, stream in [
+                (self.original_stdout, "stdout"),
+                (self.original_stderr, "stderr"),
+            ]:
+                assert original_stream is not None
+                setattr(sys, stream, original_stream)
+            self.std_capture_enabled = False
 
     def get_gdrive_client(self):
         if self.gdrive_client is None:
@@ -475,6 +540,12 @@ class RedneckLogger(BaseLogger):
     ):
         msg_prefix = "{} {}".format(get_current_time(), prefix_keyword)
         end_char = "" if carriage_return else "\n"
+
+        # Determine which stream to print to based on output_file
+        print_stream = sys.stdout
+        if output_file == self.stderr_file:
+            print_stream = sys.stderr
+
         print(
             self.make_log_message(
                 msg,
@@ -486,9 +557,12 @@ class RedneckLogger(BaseLogger):
             ),
             flush=True,
             end=end_char,
+            file=print_stream,
         )
 
-        if output_file:
+        # Only write to file separately if std_capture is not enabled
+        # (when std_capture is enabled, TeeStd already handles file writing)
+        if output_file and not self.std_capture_enabled:
             with (
                 make_file_lock(output_file)
                 if output_file_lock is None

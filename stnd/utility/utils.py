@@ -127,7 +127,7 @@ def apply_random_seed(random_seed):
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"  # to suppress warning
         torch.use_deterministic_algorithms(True, warn_only=True)
     except ImportError:
-        print("PyTorch is not installed, skipping seeding")
+        print("PyTorch is not installed, skipping seeding", file=sys.stderr)
         pass
 
 
