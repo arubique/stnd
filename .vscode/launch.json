@@ -6,6 +6,21 @@
     "configurations": [
 
         {
+            "name": "Python: executable.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./tests/run_from_csv/executables/executable.py",
+            "args": [
+                "--config_path",
+                "./tests/run_from_csv/configs/config.yaml"
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "PROJECT_ROOT_PROVIDED_FOR_STUNED": "${workspaceFolder}"
+            }
+        },
+
+        {
             "name": "Python: Debug pytest",
             "type": "debugpy",
             "request": "launch",
