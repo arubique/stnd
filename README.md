@@ -12,7 +12,9 @@ See [scheduler guide](./stnd/run_from_csv/README.md) for details.
 
 To install this package please run the following command with Python>=3.10:
 
-```pip install git+https://github.com/arubique/stnd.git```
+```
+pip install git+https://github.com/arubique/stnd.git
+```
 
 ## Citation
 
