@@ -20,6 +20,9 @@ import psutil
 import multiprocessing as mp
 from tempfile import NamedTemporaryFile
 
+# Regex pattern to match ANSI escape sequences
+ANSI_ESCAPE_PATTERN = re.compile(r"\x1b\[[0-9;]*m")
+
 
 # local modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -255,8 +258,13 @@ class TeeStd:
         self.file_path = output_file
         self.file_lock = file_lock
 
+    @staticmethod
+    def strip_ansi_codes(text):
+        """Remove ANSI escape sequences from text"""
+        return ANSI_ESCAPE_PATTERN.sub("", text)
+
     def write(self, message):
-        # Write to terminal
+        # Write to terminal with ANSI codes (for colors)
         self.terminal.write(message)
         self.terminal.flush()
 
@@ -265,16 +273,18 @@ class TeeStd:
         if getattr(self._thread_local, "in_write", False):
             return
 
-        # Write to file
+        # Write to file without ANSI codes (clean text)
         if self.file_path:
             self._thread_local.in_write = True
             try:
+                # Strip ANSI escape codes before writing to file
+                clean_message = self.strip_ansi_codes(message)
                 lock_context = (
                     self.file_lock if self.file_lock else NULL_CONTEXT
                 )
                 with lock_context:
                     with open(self.file_path, "a") as f:
-                        f.write(message)
+                        f.write(clean_message)
             finally:
                 self._thread_local.in_write = False
 
@@ -294,10 +304,6 @@ class RedneckLogger(BaseLogger):
         self.original_stdout = None
         self.original_stderr = None
         self.std_capture_enabled = False
-
-        # Suppress filelock debug messages early
-        filelock_logger = logging.getLogger("filelock")
-        filelock_logger.setLevel(logging.WARNING)
 
         if output_folder:
             self.update_output_folder(output_folder)
@@ -398,21 +404,28 @@ class RedneckLogger(BaseLogger):
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
 
-        # Create handler for INFO and below (DEBUG, INFO, WARNING) -> stdout
+        # Create handler for INFO and below (DEBUG, INFO) -> stdout
         stdout_handler = logging.StreamHandler(sys.stdout)
         stdout_handler.setLevel(logging.DEBUG)
-        stdout_handler.addFilter(lambda record: record.levelno < logging.ERROR)
+        stdout_handler.addFilter(
+            lambda record: record.levelno < logging.WARNING
+        )
         root_logger.addHandler(stdout_handler)
         self.logging_handler_streams[id(stdout_handler)] = "stdout"
 
-        # Create handler for ERROR and above (ERROR, CRITICAL) -> stderr
+        # Create handler for WARNING and above (WARNING, ERROR, CRITICAL) -> stderr
         stderr_handler = logging.StreamHandler(sys.stderr)
-        stderr_handler.setLevel(logging.ERROR)
+        stderr_handler.setLevel(logging.WARNING)
         root_logger.addHandler(stderr_handler)
         self.logging_handler_streams[id(stderr_handler)] = "stderr"
 
         # Set root logger level to DEBUG to capture everything
         root_logger.setLevel(logging.DEBUG)
+
+        # Suppress debug messages from all third-party libraries
+        # Set all existing loggers to INFO level (allows INFO, WARNING, ERROR, CRITICAL)
+        for logger_name in logging.root.manager.loggerDict:
+            logging.getLogger(logger_name).setLevel(logging.WARNING)
 
     def _update_logging_handlers(self):
         """Update all logging StreamHandlers to use current sys.stdout/sys.stderr"""

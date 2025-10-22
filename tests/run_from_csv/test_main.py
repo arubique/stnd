@@ -327,6 +327,38 @@ def test_main_script(test_env):
     assert "--- Info ---" in stdout, "--- Info --- not found in stdout"
     assert "--- Error ---" in stderr, "--- Error --- not found in stderr"
 
+    # Verify urllib3 DEBUG and INFO messages are suppressed, but WARNING is allowed
+    assert (
+        "Starting new HTTPS connection (1): api.test.com:443" not in stdout
+    ), "urllib3 debug message should be suppressed in stdout"
+    assert (
+        "Starting new HTTPS connection (1): api.test.com:443" not in stderr
+    ), "urllib3 debug message should be suppressed in stderr"
+    assert (
+        "https://api.test.com:443" not in stdout
+    ), "urllib3 info message should be suppressed in stdout"
+    assert (
+        "https://api.test.com:443" not in stderr
+    ), "urllib3 info message should be suppressed in stderr"
+    # WARNING messages go to stderr (along with ERROR and CRITICAL)
+    assert (
+        "dummy urllib warning" in stderr
+    ), "urllib3 warning message should appear in stderr"
+
+    # Verify ANSI escape codes are stripped from files
+    assert (
+        "[1;32;40m" not in stdout
+    ), "ANSI escape codes should be stripped from stdout file"
+    assert (
+        "[1;37;40m" not in stdout
+    ), "ANSI escape codes should be stripped from stdout file"
+    assert (
+        "[0;37;40m" not in stdout
+    ), "ANSI escape codes should be stripped from stdout file"
+    assert (
+        "[1;31;40m" not in stderr
+    ), "ANSI escape codes should be stripped from stderr file"
+
 
 @pytest.mark.skipif(SKIP_TESTS, reason="Skip tests when debugging")
 def test_sbatch_scripts(test_env):

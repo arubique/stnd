@@ -76,6 +76,14 @@ def demo_experiment(
     logging.info("--- Info ---")
     logging.error("--- Error ---")
 
+    # Trigger urllib3 debug messages to verify they are suppressed
+    urllib3_logger = logging.getLogger("urllib3.connectionpool")
+    urllib3_logger.debug("Starting new HTTPS connection (1): api.test.com:443")
+    urllib3_logger.info(
+        'https://api.test.com:443 "POST /test HTTP/1.1" 200 None'
+    )
+    urllib3_logger.warning("dummy urllib warning")
+
 
 def main():
     prepare_wrapper_for_experiment(check_config_for_demo_experiment)(
