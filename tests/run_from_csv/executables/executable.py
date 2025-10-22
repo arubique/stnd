@@ -1,6 +1,7 @@
 import random
 import sys
 import os
+import logging
 
 
 # local imports
@@ -72,6 +73,8 @@ def demo_experiment(
 
         print("Hello, stdout", file=sys.stdout)
         print("Hello, stderr", file=sys.stderr)
+    logging.info("--- Info ---")
+    logging.error("--- Error ---")
 
 
 def main():

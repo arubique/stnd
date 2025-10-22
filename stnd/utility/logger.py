@@ -12,6 +12,8 @@ import pandas as pd
 import csv
 import re
 import warnings
+import logging
+import threading
 from pydrive2.auth import GoogleAuth, RefreshError
 from pydrive2.drive import GoogleDrive
 import psutil
@@ -245,6 +247,9 @@ class BaseLogger:
 class TeeStd:
     """Captures stdout/stderr and writes to both terminal and file"""
 
+    # Thread-local storage to prevent reentrancy
+    _thread_local = threading.local()
+
     def __init__(self, terminal_stream, output_file, file_lock=None):
         self.terminal = terminal_stream
         self.file_path = output_file
@@ -255,12 +260,23 @@ class TeeStd:
         self.terminal.write(message)
         self.terminal.flush()
 
+        # Prevent reentrancy: if we're already inside write(), don't try to write to file again
+        # This prevents infinite recursion when lock acquisition prints debug messages
+        if getattr(self._thread_local, "in_write", False):
+            return
+
         # Write to file
         if self.file_path:
-            lock_context = self.file_lock if self.file_lock else NULL_CONTEXT
-            with lock_context:
-                with open(self.file_path, "a") as f:
-                    f.write(message)
+            self._thread_local.in_write = True
+            try:
+                lock_context = (
+                    self.file_lock if self.file_lock else NULL_CONTEXT
+                )
+                with lock_context:
+                    with open(self.file_path, "a") as f:
+                        f.write(message)
+            finally:
+                self._thread_local.in_write = False
 
     def flush(self):
         self.terminal.flush()
@@ -304,6 +320,9 @@ class RedneckLogger(BaseLogger):
         self.gdrive_daemon = None
         self.stdout_lock = None
         self.stderr_lock = None
+        self.logging_handler_streams = (
+            {}
+        )  # Track original streams for logging handlers
 
         if capture_std:
             self.enable_std_capture()
@@ -345,6 +364,12 @@ class RedneckLogger(BaseLogger):
                 setattr(self, f"original_{stream}", original_stream)
                 setattr(sys, stream, TeeStd(original_stream, file, lock))
 
+            # Configure logging to route different levels to different streams
+            self._configure_logging_handlers()
+
+            # Update logging handlers to use the new streams
+            self._update_logging_handlers()
+
             self.std_capture_enabled = True
 
     def disable_std_capture(self):
@@ -357,6 +382,76 @@ class RedneckLogger(BaseLogger):
                 assert original_stream is not None
                 setattr(sys, stream, original_stream)
             self.std_capture_enabled = False
+
+            # Restore logging handlers to original streams
+            self._update_logging_handlers()
+
+    def _configure_logging_handlers(self):
+        """Configure logging to route INFO to stdout and ERROR to stderr"""
+        root_logger = logging.getLogger()
+
+        # Remove existing handlers
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
+
+        # Create handler for INFO and below (DEBUG, INFO, WARNING) -> stdout
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setLevel(logging.DEBUG)
+        stdout_handler.addFilter(lambda record: record.levelno < logging.ERROR)
+        root_logger.addHandler(stdout_handler)
+        self.logging_handler_streams[id(stdout_handler)] = "stdout"
+
+        # Create handler for ERROR and above (ERROR, CRITICAL) -> stderr
+        stderr_handler = logging.StreamHandler(sys.stderr)
+        stderr_handler.setLevel(logging.ERROR)
+        root_logger.addHandler(stderr_handler)
+        self.logging_handler_streams[id(stderr_handler)] = "stderr"
+
+        # Set root logger level to DEBUG to capture everything
+        root_logger.setLevel(logging.DEBUG)
+
+    def _update_logging_handlers(self):
+        """Update all logging StreamHandlers to use current sys.stdout/sys.stderr"""
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            if isinstance(handler, logging.StreamHandler) and hasattr(
+                handler, "stream"
+            ):
+                handler_id = id(handler)
+
+                # Track which stream this handler was using
+                if handler_id not in self.logging_handler_streams:
+                    # Determine if this handler is using stdout or stderr
+                    # by comparing with the original streams
+                    if self.std_capture_enabled:
+                        # Currently enabled - compare with TeeStd.terminal
+                        if hasattr(handler.stream, "terminal"):
+                            original = handler.stream.terminal
+                        else:
+                            original = handler.stream
+
+                        if original == self.original_stdout:
+                            self.logging_handler_streams[handler_id] = "stdout"
+                        else:
+                            self.logging_handler_streams[handler_id] = "stderr"
+                    else:
+                        # Not yet enabled - compare with current sys streams
+                        if handler.stream == sys.stdout or (
+                            hasattr(handler.stream, "terminal")
+                            and handler.stream.terminal == sys.stdout
+                        ):
+                            self.logging_handler_streams[handler_id] = "stdout"
+                        else:
+                            self.logging_handler_streams[handler_id] = "stderr"
+
+                # Update handler to use the appropriate current stream
+                stream_name = self.logging_handler_streams.get(
+                    handler_id, "stderr"
+                )
+                if stream_name == "stdout":
+                    handler.stream = sys.stdout
+                else:
+                    handler.stream = sys.stderr
 
     def get_gdrive_client(self):
         if self.gdrive_client is None:

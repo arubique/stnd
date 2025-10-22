@@ -317,13 +317,15 @@ def test_main_script(test_env):
     stderr_path = os.path.join(test_env["temp_dir"], run_folder, "stderr.txt")
     stdout = read_last_bytes(stdout_path)
     stderr = read_last_bytes(stderr_path)
-
     assert (
         "Hello, stdout\n" * 10
     ) in stdout, "Expected 10 consecutive 'Hello, stdout' lines in stdout"
     assert (
         "PyTorch is not installed, skipping seeding\n" + "Hello, stderr\n" * 10
     ) in stderr, "Expected import warning + 10 consecutive 'Hello, stderr' lines in stderr"
+
+    assert "--- Info ---" in stdout, "--- Info --- not found in stdout"
+    assert "--- Error ---" in stderr, "--- Error --- not found in stderr"
 
 
 @pytest.mark.skipif(SKIP_TESTS, reason="Skip tests when debugging")
