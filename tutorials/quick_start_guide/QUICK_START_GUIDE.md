@@ -27,7 +27,7 @@ The `demo_experiment` function contains all the necessary code for the operation
 
 ### Wrap the script with scheduler wrapper
 
-To make `./experiments.py` runnable by our scheduler, the `demo_experiment` function should be wrapped and called like this:
+To make `./experiment.py` runnable by our scheduler, the `demo_experiment` function should be wrapped and called like this:
 
 ```python
 def main():
@@ -73,11 +73,11 @@ params:
 
 The `use_wandb` field in `logging` dict and `random_seed` in `params` dict are inherent to the scheduler and can be configured no matter which contents `experiment.py` has. Their meanings are explained in the [reference file](../reference/REFERENCE.md).
 
-In contrast, fields like `initialization_type` and the contents of the `image` dict are specific to`experiments.py` and used to parameterize the experiments in this tutorial. `initialization_type` will vary between runs, while the image fields will remain constant across all experiments.
+In contrast, fields like `initialization_type` and the contents of the `image` dict are specific to`experiment.py` and used to parameterize the experiments in this tutorial. `initialization_type` will vary between runs, while the image fields will remain constant across all experiments.
 
 ## Prepare results table
 
-Once `experiments.py` and `default_config.yml` are ready, you can create a results table template to store all experiments.
+Once `experiment.py` and `default_config.yml` are ready, you can create a results table template to store all experiments.
 
 For demonstration, we've provided `./results.csv`, which will store each experiment's configuration parameters and results.
 
@@ -90,11 +90,11 @@ For demonstration, we've provided `./results.csv`, which will store each experim
 Each experiment is defined in a separate row. For each row, the scheduler uses:
 
 - `path_to_default_config`: path to the base configuration file (e.g., `default_config.yml`)
-- `path_to_main`: path to the main experiment script (e.g., `experiments.py`)
+- `path_to_main`: path to the main experiment script (e.g., `experiment.py`)
 - `whether_to_run`: if it is non-zero then experiment will be run, otherwise this line will be ignored by scheduler.
 - **Deltas**: Overrides to the default config that define argument values for the run. Column names must start with the `delta:` prefix. For nested config fields, use `/` to separate levels (e.g., `delta:image/color`).
 
-Each row in the table corresponds to running `experiments.py` with a different parameter configuration — for example, `initialization_type == zeros` and `image/color == red` for row 1, and `initialization_type == ones` and `image/color == red` for row 3. These parameters are for demonstration purposes only and are designed to alter the script’s output. All other parameters are shared across experiments and defined in `default_config.yml`.
+Each row in the table corresponds to running `experiment.py` with a different parameter configuration — for example, `initialization_type == zeros` and `image/color == red` for row 1, and `initialization_type == ones` and `image/color == red` for row 3. These parameters are for demonstration purposes only and are designed to alter the script’s output. All other parameters are shared across experiments and defined in `default_config.yml`.
 
 **Important:** To avoid issues with experiment submission, make sure the results table does **not** contain commas (`,`) or quotation marks (`"`).
 
