@@ -295,6 +295,10 @@ class RedneckLogger(BaseLogger):
         self.original_stderr = None
         self.std_capture_enabled = False
 
+        # Suppress filelock debug messages early
+        filelock_logger = logging.getLogger("filelock")
+        filelock_logger.setLevel(logging.WARNING)
+
         if output_folder:
             self.update_output_folder(output_folder)
         else:
