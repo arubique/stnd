@@ -118,6 +118,7 @@ def update_job_statuses_in_place(
                 job_status=job_status,
                 job_exit_code=exit_code,
                 csv_row_id=row_id,
+                log_file_path=job.get("log_file_path"),
             )
             job_to_add.updated = True
             job_manager.jobs.append(job_to_add)
@@ -126,6 +127,8 @@ def update_job_statuses_in_place(
             job_from_local = job_manager.jobs[job_from_local_idx]
             if job_from_local.csv_row_id is None:
                 job_from_local.csv_row_id = row_id
+            if job.get("log_file_path"):
+                job_from_local.log_file_path = job.get("log_file_path")
             if job_from_local.job_status != job_status or job_from_local.job_exit_code != exit_code:
                 # Update the job and mark as update
                 job_from_local.job_status = job_status
@@ -204,7 +207,11 @@ def submit_job(
             main_pid, child_pids = get_main_and_child_pids(process.pid)
             try:
                 with lock_manager:
-                    shared_jobs_dict[row_id] = {"main_pid": main_pid, "status": JobStatus.RUNNING}
+                    shared_jobs_dict[row_id] = {
+                        "main_pid": main_pid,
+                        "status": JobStatus.RUNNING,
+                        "log_file_path": log_file_path,
+                    }
             except Exception as e:
                 pass
             # Periodically check if the process is still running
@@ -233,6 +240,11 @@ def submit_job(
 
             # Process finished
             update_job_status(process, shared_jobs_dict, row_id, lock_manager)
+            if process.returncode and process.returncode != 0:
+                logger.log(
+                    f"Job row {row_id} (pid: {process.pid}) exited with code {process.returncode}. "
+                    f"Log file: {log_file_path}"
+                )
             running_jobs.value -= 1
             return process.returncode
         else:
@@ -242,34 +254,42 @@ def submit_job(
                 if not run_jobs_flag.value:
                     return "Job Stopped"
                     
-                output = subprocess.check_output(
+                submission_output = subprocess.check_output(
                     run_cmd, stderr=subprocess.STDOUT, shell=True, timeout=timeout_duration
                 ).decode("utf-8")
-                numbers = re.findall(r"\d+", output)
+                numbers = re.findall(r"\d+", submission_output)
                 job_id = int("".join(numbers))
 
                 if job_id:
-                    logger.log(f"Submitted a job with ID: {job_id}")
-                else:
-                    logger.log("Failed to extract job ID from the output.")
+                    with submitted_jobs_lock:
+                        submitted_jobs.value += 1
+
+                    with lock_manager:
+                        shared_jobs_dict[row_id] = {
+                            "job_id": job_id,
+                            "status": JobStatus.PENDING,  # Changed from "submitted" to use JobStatus enum
+                            "log_file_path": log_file_path,
+                        }
+
+                    logger.log(
+                        f"Submitted a job with ID: {job_id}. Log file: {log_file_path}"
+                    )
+                    return 0
+
+                logger.log("Failed to extract job ID from the submission output.")
+                logger.log(f"Submission output:\n{submission_output}")
+                return 1
 
             except subprocess.CalledProcessError as e:
-                print(f"Command failed with error: {e.output.decode('utf-8')}")
+                logger.log(
+                    f"sbatch command failed:\n{e.output.decode('utf-8', errors='ignore')}"
+                )
                 return 1
             except subprocess.TimeoutExpired:
-                print(f"The command took longer than {timeout_duration} seconds to complete.")
+                logger.log(
+                    f"The sbatch command took longer than {timeout_duration} seconds to complete."
+                )
                 return 1
-
-            with submitted_jobs_lock:
-                submitted_jobs.value += 1
-
-            with lock_manager:
-                shared_jobs_dict[row_id] = {
-                    "job_id": job_id,
-                    "status": JobStatus.PENDING,  # Changed from "submitted" to use JobStatus enum
-                }
-
-            return 0
 
 
 def get_all_slurm_jobs():

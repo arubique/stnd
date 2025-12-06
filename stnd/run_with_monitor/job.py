@@ -39,13 +39,15 @@ def get_slurm_job_status(slurm_status: str) -> str:
 
 
 class Job:
-    def __init__(self, job_id, job_status, job_exit_code, csv_row_id):
+    def __init__(self, job_id, job_status, job_exit_code, csv_row_id, log_file_path=None):
         self.job_id = job_id
         self.job_status = job_status
         self.job_exit_code = job_exit_code
         self.csv_row_id = csv_row_id
+        self.log_file_path = log_file_path
 
         self.updated = True
+        self.failure_notified = False
 
         self.writing_queue = []
 

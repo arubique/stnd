@@ -9,6 +9,7 @@ This module handles:
 """
 
 import os
+import warnings
 from tempfile import NamedTemporaryFile
 
 from stnd.run_with_monitor.utility.utils import NEW_SHELL_INIT_COMMAND
@@ -30,7 +31,7 @@ def make_task_cmd(new_config_path, conda_env, exec_path, csv_row):
     Create the task command string for execution.
     
     Args:
-        new_config_path: Path to the generated configuration file
+        new_config_path: Path to the generated configuration file (optional)
         conda_env: Conda environment name to use
         exec_path: Path to the main execution script
         csv_row: CSV row data containing potential custom run command
@@ -38,16 +39,20 @@ def make_task_cmd(new_config_path, conda_env, exec_path, csv_row):
     Returns:
         str: Complete command string ready for execution
     """
-    exec_args = "--config_path {}".format(new_config_path)
+    exec_args = []
+    if new_config_path:
+        exec_args.extend(["--config_path", str(new_config_path)])
 
-    # If `custom_run_cmd` is passed, overwrite the default command
-    # with the custom one.
-    if "custom_run_cmd" in csv_row:
-        cmd = "{} {} {}".format(csv_row["custom_run_cmd"], exec_path, exec_args)
+    if "custom_run_cmd" in csv_row and csv_row["custom_run_cmd"]:
+        cmd_parts = [csv_row["custom_run_cmd"], exec_path]
+        if exec_args:
+            cmd_parts.extend(exec_args)
+        cmd = " ".join(cmd_parts)
     else:
-        cmd = "{} {} && python {} {}".format(
-            NEW_SHELL_INIT_COMMAND, conda_env, exec_path, exec_args
-        )
+        cmd_parts = [NEW_SHELL_INIT_COMMAND, conda_env, "&&", "python", exec_path]
+        if exec_args:
+            cmd_parts.extend(exec_args)
+        cmd = " ".join(cmd_parts)
     return cmd
 
 
@@ -102,7 +107,11 @@ def check_csv_column_names(csv_row, allowed_prefixes):
     # Check for required columns
     assert MAIN_PATH_COLUMN in csv_row, f"Required column '{MAIN_PATH_COLUMN}' missing from CSV"
     assert WHETHER_TO_RUN_COLUMN in csv_row, f"Required column '{WHETHER_TO_RUN_COLUMN}' missing from CSV"
-    assert PATH_TO_DEFAULT_CONFIG_COLUMN in csv_row, f"Required column '{PATH_TO_DEFAULT_CONFIG_COLUMN}' missing from CSV"
+    if PATH_TO_DEFAULT_CONFIG_COLUMN not in csv_row:
+        warnings.warn(
+            f"Optional column '{PATH_TO_DEFAULT_CONFIG_COLUMN}' missing from CSV. "
+            "Proceeding without a template config."
+        )
 
     # Validate column names and prefixes
     for i, key in enumerate(csv_row.keys()):

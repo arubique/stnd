@@ -97,7 +97,7 @@ from .utils import (
     get_hostname,
     get_system_root_path,
     raise_unknown,
-    folder_still_has_updates,
+    # folder_still_has_updates,
     as_str_for_csv,
     remove_file_or_folder,
     log_or_print,
@@ -628,13 +628,25 @@ def try_to_log_in_csv_in_batch(logger: RedneckLogger, column_value_pairs, sync=F
 
 
 def try_to_log_in_socket_in_batch(logger: RedneckLogger, column_value_pairs, sync=True, enabled=True):
-    if logger.socket_client is not None:
-        for cv_pair in column_value_pairs:
-            logger.socket_client.send_message(
-                MessageType.JOB_RESULT_UPDATE, cv_pair[0], cv_pair[1], sync=False
+    if logger.socket_client is None or not enabled:
+        return False
+
+    for cv_pair in column_value_pairs:
+        logger.socket_client.send_message(
+            MessageType.JOB_RESULT_UPDATE, cv_pair[0], cv_pair[1], sync=False
+        )
+
+    if sync:
+        logger.socket_client.sync_with_remote()
+        if logger.socket_client.message_queue:
+            logger.log(
+                "Socket sync failed, falling back to direct CSV logging for this batch."
             )
-        if sync and enabled:
-            logger.socket_client.sync_with_remote()
+            try_to_log_in_csv_in_batch(logger, column_value_pairs, sync=False)
+            logger.socket_client.message_queue = []
+            return False
+
+    return True
 
 
 def try_to_log_in_socket_with_msg_type_in_batch(
@@ -690,13 +702,12 @@ def log_to_sheet_in_batch(logger: RedneckLogger, column_value_pairs, sync=True, 
         final_column_value_pairs[i] = (escaped_key_name, value)
 
     # if logger.gspread_client is not None:
-    print(f'is socket client none? {logger.socket_client is None}')
-    if logger.socket_client is not None:
-        return try_to_log_in_socket_in_batch(logger, final_column_value_pairs, sync=sync, enabled=enabled)
-    else:
+    used_socket = try_to_log_in_socket_in_batch(
+        logger, final_column_value_pairs, sync=sync, enabled=enabled
+    )
+    if not used_socket:
         try_to_log_in_csv_in_batch(logger, final_column_value_pairs, sync=sync)
-        # if sync:
-        #     try_to_sync_csv_with_remote(logger)
+    return used_socket
 
 
 def log_to_sheet_with_msg_type_in_batch(
@@ -711,7 +722,11 @@ def log_to_sheet_with_msg_type_in_batch(
 
 
 def try_to_sync_csv_with_remote(
-    logger, sync_row_zero=True, report_aux=True, update_only_local_cols=False
+    logger,
+    sync_row_zero=True,
+    report_aux=True,
+    update_only_local_cols=False,
+    sync=None,
 ):
     """
 
@@ -719,9 +734,16 @@ def try_to_sync_csv_with_remote(
     :param sync_row_zero: if True, syncs row 0 of the csv file
     :param report_aux: if True, reports auxiliary info about the run:
         1. timestamp of the last log
+    :param sync: deprecated alias kept for backward compatibility; no effect
     """
+    if sync is not None:
+        warnings.warn(
+            "The `sync` argument of try_to_sync_csv_with_remote() is deprecated; "
+            "use the default behaviour or the `sync_row_zero` flag instead.",
+            stacklevel=2,
+        )
 
-    if logger.gspread_client is not None:
+    if logger and logger.gspread_client is not None:
         if report_aux:
             try_to_log_in_csv(logger, LAST_REPORT_TIME_COLUMN, current_time_formatted())
 

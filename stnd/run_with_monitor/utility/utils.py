@@ -25,8 +25,8 @@ import sys
 from collections import Counter
 import itertools
 import contextlib
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+# from watchdog.observers import Observer
+# from watchdog.events import FileSystemEventHandler
 import io
 import re
 
@@ -1550,57 +1550,57 @@ def instantiate_from_config(config, object_key_in_config, make_func, logger):
         return make_func(object_config, logger)
 
 
-class TimeStampEventHandler(FileSystemEventHandler):
-    def __init__(self):
-        super(TimeStampEventHandler, self).__init__()
-        self.update_time()
+# class TimeStampEventHandler(FileSystemEventHandler):
+#     def __init__(self):
+#         super(TimeStampEventHandler, self).__init__()
+#         self.update_time()
 
-    def on_any_event(self, event):
-        self.update_time()
+#     def on_any_event(self, event):
+#         self.update_time()
 
-    def update_time(self):
-        self.last_change_time = get_current_time()
+#     def update_time(self):
+#         self.last_change_time = get_current_time()
 
-    def has_events(self, delta):
-        time_since_last_change = (get_current_time() - self.last_change_time).total_seconds()
-        if time_since_last_change <= delta:
-            return True
-        else:
-            return False
+#     def has_events(self, delta):
+#         time_since_last_change = (get_current_time() - self.last_change_time).total_seconds()
+#         if time_since_last_change <= delta:
+#             return True
+#         else:
+#             return False
 
 
-def folder_still_has_updates(path, delta, max_time, check_time=None):
-    """
-    Check every <check_time> seconds whether <path> had any updates (events).
-    Observe the <path> for at most <max_time>.
-    If there were no updates for <delta> seconds return True, otherwise return
-    False. If watchdog observer failed to start return None.
-    """
+# def folder_still_has_updates(path, delta, max_time, check_time=None):
+#     """
+#     Check every <check_time> seconds whether <path> had any updates (events).
+#     Observe the <path> for at most <max_time>.
+#     If there were no updates for <delta> seconds return True, otherwise return
+#     False. If watchdog observer failed to start return None.
+#     """
 
-    if check_time is None:
-        check_time = delta
+#     if check_time is None:
+#         check_time = delta
 
-    n = max(1, int(max_time / check_time))
-    i = 0
-    event_handler = TimeStampEventHandler()
-    observer = Observer()
-    observer.schedule(event_handler, path, recursive=True)
+#     n = max(1, int(max_time / check_time))
+#     i = 0
+#     event_handler = TimeStampEventHandler()
+#     observer = Observer()
+#     observer.schedule(event_handler, path, recursive=True)
 
-    try:
-        observer.start()
-    except:
-        return None
+#     try:
+#         observer.start()
+#     except:
+#         return None
 
-    has_events_bool = event_handler.has_events(delta)
-    while has_events_bool and i < n:
-        time.sleep(check_time)
-        i += 1
-        has_events_bool = event_handler.has_events(delta)
+#     has_events_bool = event_handler.has_events(delta)
+#     while has_events_bool and i < n:
+#         time.sleep(check_time)
+#         i += 1
+#         has_events_bool = event_handler.has_events(delta)
 
-    observer.stop()
-    observer.join()
+#     observer.stop()
+#     observer.join()
 
-    return has_events_bool
+#     return has_events_bool
 
 
 def as_str_for_csv(value, chars_to_remove=[]):

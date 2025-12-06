@@ -20,7 +20,7 @@ import psutil
 from stnd.run_with_monitor.gsheet_batch_updater import GSheetBatchUpdater
 from stnd.run_with_monitor.job import Job, JobStatus, find_job_id_by_row_id, find_job_idx, get_slurm_job_status
 from stnd.run_with_monitor.job_manager import JobManager
-from stnd.utility.ai_center_cluster_specific import get_region, CLUSTER
+from stnd.run_with_monitor.utility.ai_center_cluster_specific import get_region, CLUSTER
 from stnd.run_with_monitor.utility.local_processing_utils import process_exists
 
 # Import job submission functionality
@@ -171,9 +171,17 @@ def parse_args():
 
     parser.add_argument(
         "--use_socket",
+        dest="use_socket",
         action="store_true",
-        help="whether to use a socket for communication with the server",
+        help="force-enable socket communication with the monitor server",
     )
+    parser.add_argument(
+        "--no_socket",
+        dest="use_socket",
+        action="store_false",
+        help="disable socket communication (falls back to direct CSV logging)",
+    )
+    parser.set_defaults(use_socket=OPEN_SOCKET)
 
     parser.add_argument(
         "--disable_local_loging",
@@ -209,7 +217,7 @@ def main_with_monitoring(
 
     args = parse_args()
     max_conc_jobs = -1 if "max_concurrent_jobs" not in args else args.max_concurrent_jobs
-    use_socket = args.use_socket if args.use_socket is not None else False
+    use_socket = args.use_socket
     disable_local_loging = args.disable_local_loging if args.disable_local_loging is not None else False
 
     logger = make_logger()
@@ -246,6 +254,7 @@ def main_with_monitoring(
         shared_default_config_paths = shared_memory_manager.dict()
         shared_row_numbers = shared_memory_manager.list()
         shared_jobs_dict = shared_memory_manager.dict()
+        shared_log_paths = shared_memory_manager.list()
 
         # First process all rows to prepare commands
         starmap_args_for_row_processing = [
@@ -265,6 +274,7 @@ def main_with_monitoring(
                 shared_default_config_paths,
                 shared_csv_updates,
                 shared_row_numbers,
+                shared_log_paths,
                 current_step,
                 len(inputs_csv),
                 job_manager.server_ip,
@@ -291,7 +301,7 @@ def main_with_monitoring(
                     job_submission_args = [
                         (
                             run_cmd,
-                            args.log_file_path,
+                            log_path,
                             args.run_locally,
                             shared_jobs_dict,
                             row_id,
@@ -299,7 +309,9 @@ def main_with_monitoring(
                             logger,
                             max_conc_jobs,
                         )
-                        for run_cmd, row_id in zip(shared_rows_to_run, shared_row_numbers)
+                        for run_cmd, row_id, log_path in zip(
+                            shared_rows_to_run, shared_row_numbers, shared_log_paths
+                        )
                     ]
 
                     # Submit jobs in batches and monitor them

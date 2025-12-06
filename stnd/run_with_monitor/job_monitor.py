@@ -130,6 +130,65 @@ def monitor_jobs_async(
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, signal_handler)
 
+    def notify_job_failures():
+        def emit_log_tail(log_path, max_bytes=8192, max_lines=20):
+            try:
+                if not os.path.exists(log_path):
+                    logger.log("   ↳ Log file not found yet.")
+                    return
+                file_size = os.path.getsize(log_path)
+                if file_size == 0:
+                    logger.log("   ↳ Log file currently empty.")
+                    return
+                with open(log_path, "rb") as fh:
+                    if file_size > max_bytes:
+                        fh.seek(-max_bytes, os.SEEK_END)
+                    raw_tail = fh.read()
+                try:
+                    decoded_tail = raw_tail.decode("utf-8", errors="ignore")
+                except Exception:
+                    decoded_tail = raw_tail.decode("latin-1", errors="ignore")
+                lines = [line.rstrip() for line in decoded_tail.splitlines()]
+                tail_lines = lines[-max_lines:] if len(lines) > max_lines else lines
+                if not tail_lines:
+                    logger.log("   ↳ Log file contains no printable characters.")
+                    return
+                logger.log("   ↳ Last log lines:")
+                for line in tail_lines:
+                    logger.log(f"     {line}")
+            except Exception as tail_err:
+                logger.log(f"   ↳ Unable to read log tail: {tail_err}")
+
+        failure_statuses = {JobStatus.FAILED, JobStatus.CANCELLED, JobStatus.TIMEOUT}
+        updated_jobs = []
+        for idx, job in enumerate(job_manager.jobs):
+            if job.job_status in failure_statuses and not getattr(job, "failure_notified", False):
+                job_descriptor = (
+                    f"row {job.csv_row_id}" if job.csv_row_id is not None else "unknown row"
+                )
+                if job.job_id is not None:
+                    job_descriptor += f" (id: {job.job_id})"
+                exit_info = (
+                    f" (exit code: {job.job_exit_code})"
+                    if job.job_exit_code is not None
+                    else ""
+                )
+                if getattr(job, "log_file_path", None):
+                    logger.log(
+                        f"Job {job_descriptor} marked as {job.job_status}{exit_info}. "
+                        f"Log file: {job.log_file_path}"
+                    )
+                    emit_log_tail(job.log_file_path)
+                else:
+                    logger.log(
+                        f"Job {job_descriptor} marked as {job.job_status}{exit_info}. "
+                        "No log file path recorded."
+                    )
+                job.failure_notified = True
+                updated_jobs.append((idx, job))
+        for idx, job in updated_jobs:
+            job_manager.jobs[idx] = job
+
     try:
         gsheet_updater = None
         shared_row_numbers_lst = list(shared_row_numbers)
@@ -258,6 +317,8 @@ def monitor_jobs_async(
                     jobs_update_status = update_job_statuses_in_place(
                         job_manager, shared_jobs_dict, logger, run_locally
                     )
+                    if jobs_update_status:
+                        notify_job_failures()
                     if jobs_update_status and gsheet_updater is not None:
                         dump_into_gsheet_queue(gsheet_updater, job_manager)
 
@@ -325,6 +386,8 @@ def monitor_jobs_async(
                     jobs_update_status = update_job_statuses_in_place(
                         job_manager, shared_jobs_copy, logger, run_locally
                     )
+                    if jobs_update_status:
+                        notify_job_failures()
                     if jobs_update_status and gsheet_updater is not None:
                         dump_into_gsheet_queue(gsheet_updater, job_manager)
                         gsheet_updater.batch_update(force=True)
@@ -429,6 +492,8 @@ def monitor_jobs_async(
                         jobs_update_status = update_job_statuses_in_place(
                             job_manager, shared_jobs_copy, logger, run_locally
                         )
+                        if jobs_update_status:
+                            notify_job_failures()
 
                         # Make sure all cancelled jobs are marked for update
                         for job in job_manager.jobs:

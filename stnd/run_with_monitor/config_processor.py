@@ -15,6 +15,7 @@ import warnings
 import traceback
 import shutil
 from tempfile import NamedTemporaryFile
+from datetime import datetime
 
 from stnd.run_with_monitor.utility.ai_center_cluster_specific import CLUSTER
 from stnd.run_with_monitor.utility.utils import (
@@ -77,6 +78,7 @@ def process_csv_row(
     shared_default_config_paths,
     shared_csv_updates,
     shared_row_numbers,
+    shared_log_paths,
     current_step,
     total_rows,
     server_ip,
@@ -127,36 +129,73 @@ def process_csv_row(
             replace_placeholders(csv_row, CURRENT_ROW_PLACEHOLDER, str(row_number))
             replace_placeholders(csv_row, CURRENT_WORKSHEET_PLACEHOLDER, worksheet_name)
 
-            default_config_path_or_url = csv_row[PATH_TO_DEFAULT_CONFIG_COLUMN]
-            if not default_config_path_or_url in shared_default_config_paths:
-                with lock:
-                    try:
-                        default_config_path = fetch_default_config_path(
-                            default_config_path_or_url, logger
-                        )
-                    except Exception as e:
-                        # log also row number etc
-                        logger.log(
-                            f"Failed to fetch default config path at {default_config_path_or_url}."
-                            f"\nIt occurs in row {row_number} of {input_csv_path}."
-                        )
-                        raise e
-                    shared_default_config_paths[default_config_path_or_url] = default_config_path
+            default_config_path_or_url = str(
+                csv_row.get(PATH_TO_DEFAULT_CONFIG_COLUMN, "") or ""
+            ).strip()
+
+            try:
+                exec_path = normalize_path(csv_row[MAIN_PATH_COLUMN])
+            except KeyError:
+                logger.log(
+                    f"Skipping row {row_number} - '{MAIN_PATH_COLUMN}' column missing from CSV data."
+                )
+                return
+            except Exception as e:
+                logger.log(
+                    f"Skipping row {row_number} - failed to normalize path for '{MAIN_PATH_COLUMN}': {e}"
+                )
+                raise
+
+            default_config = {}
+            exp_dir = None
+            exp_name = None
+
+            if default_config_path_or_url:
+                if default_config_path_or_url not in shared_default_config_paths:
+                    with lock:
+                        try:
+                            default_config_path = fetch_default_config_path(
+                                default_config_path_or_url, logger
+                            )
+                        except Exception as e:
+                            # log also row number etc
+                            logger.log(
+                                f"Failed to fetch default config path at {default_config_path_or_url}."
+                                f"\nIt occurs in row {row_number} of {input_csv_path}."
+                            )
+                            raise e
+                        shared_default_config_paths[
+                            default_config_path_or_url
+                        ] = default_config_path
+                else:
+                    default_config_path = shared_default_config_paths[
+                        default_config_path_or_url
+                    ]
+                if default_config_path is None:
+                    error_msg = (
+                        f"Default config path at {default_config_path} is None. "
+                        f"(occurs in row {row_number} of {input_csv_path})"
+                    )
+                    logger.log(error_msg)
+                    raise ValueError(error_msg)
+                if not os.path.exists(default_config_path):
+                    error_msg = (
+                        f"Default config path at {default_config_path} does not exist "
+                        f"(occurs in row {row_number} of {input_csv_path})"
+                    )
+                    logger.log(error_msg)
+                    raise FileNotFoundError(error_msg)
+
+                exp_dir = normalize_path(os.path.dirname(default_config_path))
+                exp_name = os.path.basename(exp_dir)
+
+                default_config = read_yaml(default_config_path)
             else:
-                default_config_path = shared_default_config_paths[default_config_path_or_url]
-            if default_config_path is None:
-                error_msg = f"Default config path at {default_config_path} is None. (occurs in row {row_number} of {input_csv_path})"
-                logger.log(error_msg)
-                raise ValueError(error_msg)
-            if not os.path.exists(default_config_path):
-                error_msg = f"Default config path at {default_config_path} does not exist (occurs in row {row_number} of {input_csv_path})"
-                logger.log(error_msg)
-                raise FileNotFoundError(error_msg)
-
-            exp_dir = normalize_path(os.path.dirname(default_config_path))
-            exp_name = os.path.basename(exp_dir)
-
-            default_config = read_yaml(default_config_path)
+                # No template config provided; build configs in a dedicated folder.
+                exp_name = os.path.splitext(os.path.basename(exec_path))[0] or "autogen_experiment"
+                exp_dir = os.path.join(
+                    get_default_configs_folder(), "no_template_runs", exp_name
+                )
 
             if disable_local_loging:
                 if "logging" in default_config and isinstance(default_config["logging"], dict):
@@ -179,25 +218,59 @@ def process_csv_row(
             cmd_as_string = make_task_cmd(
                 new_config_path,
                 conda_env,
-                normalize_path(csv_row[MAIN_PATH_COLUMN]),
+                exec_path,
                 csv_row,  # pass the row since might need to overwrite running command
             )
 
-            log_folder = os.path.dirname(log_file_path)
+            # Build per-row log file path so each job has a unique log
+            row_log_file_path = log_file_path
+            base_dir = ""
+            base_name = ""
+            if log_file_path:
+                base_dir, base_name = os.path.split(log_file_path)
+            if not base_name:
+                base_name = "run_with_monitor"
+            stem, ext = os.path.splitext(base_name)
+            if not stem:
+                stem = "run_with_monitor"
+            if not ext:
+                ext = ".out"
+            if not base_dir:
+                base_dir = os.path.join(get_project_root_path(), "tmp")
+            timestamp_suffix = datetime.now().strftime("%Y%m%d_%H%M%S")
+            row_log_file_path = os.path.join(
+                base_dir, f"{stem}_row_{row_number}_{timestamp_suffix}{ext}"
+            )
+
+            log_folder = os.path.dirname(row_log_file_path)
+            if not log_folder:
+                log_folder = "."
             if not os.path.exists(log_folder):
                 with lock:
                     os.makedirs(log_folder, exist_ok=True)
 
             if run_locally:
                 final_cmd = "{}".format(cmd_as_string)
+                log_path_for_job = row_log_file_path
             else:
-                final_cmd = make_final_cmd(csv_row, exp_name, log_file_path, cmd_as_string)
+                final_cmd = make_final_cmd(csv_row, exp_name, row_log_file_path, cmd_as_string)
+                # Prefer SLURM output path if explicitly provided in CSV, otherwise fall back
+                slurm_output_path = csv_row.get("slurm:output") or csv_row.get("slurm:error")
+                if slurm_output_path:
+                    try:
+                        log_path_for_job = normalize_path(slurm_output_path)
+                    except Exception:
+                        log_path_for_job = slurm_output_path
+                else:
+                    log_path_for_job = row_log_file_path
 
         if final_cmd is not None:
             shared_csv_updates.append((row_number, STATUS_CSV_COLUMN, SUBMITTED_STATUS))
             shared_csv_updates.append((row_number, WHETHER_TO_RUN_COLUMN, "0"))
-            shared_rows_to_run.append(final_cmd)
-            shared_row_numbers.append(row_number)
+            with lock:
+                shared_rows_to_run.append(final_cmd)
+                shared_row_numbers.append(row_number)
+                shared_log_paths.append(log_path_for_job)
 
         with lock:
             current_step.value += 1
@@ -258,15 +331,16 @@ def make_new_config(
     Assume that `fixed_params` are the ones being passed to the jobs. We will move them to the config file
     but will update them according to the `deltas` in the config file.
     """
+    base_config = copy.deepcopy(default_config or {})
+
     deltas = extract_from_csv_row_by_prefix(
         csv_row, DELTA_PREFIX + PREFIX_SEPARATOR, ignore_values=PLACEHOLDERS_FOR_DEFAULT
     )
 
     if DELTA_AFFECTS_ONLY_FIXED_PARAMS:
         """Make changes only in the 'fixed_params' subdict of the config"""
-        assert (
-            "fixed_params" in default_config
-        ), "If DELTA_AFFECTS_ONLY_FIXED_PARAMS is True, then 'fixed_params' must be in default_config."
+        if "fixed_params" not in base_config or not isinstance(base_config["fixed_params"], dict):
+            base_config["fixed_params"] = {}
         for key in list(deltas.keys()):
             deltas["fixed_params" + NESTED_CONFIG_KEY_SEPARATOR + key] = deltas[key]
             del deltas[key]
@@ -302,7 +376,7 @@ def make_new_config(
 
     deltas["run_locally"] = run_locally
 
-    new_config = make_config_from_default_and_deltas(default_config, deltas)
+    new_config = make_config_from_default_and_deltas(base_config, deltas)
     # make sure we preserve deltas though
     for delta in deltas:
         if delta == f"logging{NESTED_CONFIG_KEY_SEPARATOR}output_csv":
@@ -311,7 +385,7 @@ def make_new_config(
 
     if DELTA_AFFECTS_ONLY_FIXED_PARAMS:
         # Copy stuff from `fixed_params` to the root of the config
-        for key, value in new_config["fixed_params"].items():
+        for key, value in new_config.get("fixed_params", {}).items():
             new_config[key] = value
 
     new_config_path = os.path.join(
