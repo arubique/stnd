@@ -83,6 +83,7 @@ def process_csv_row(
     total_rows,
     server_ip,
     server_port,
+    file_updates_dir,
     disable_local_loging,
     cluster_region,
 ):
@@ -213,6 +214,7 @@ def process_csv_row(
                 server_ip,
                 server_port,
                 run_locally,
+                file_updates_dir,
             )
 
             cmd_as_string = make_task_cmd(
@@ -324,6 +326,7 @@ def make_new_config(
     server_ip,
     server_port,
     run_locally,
+    file_updates_dir=None,
 ):
     """
     Create a new configuration by applying deltas to the default config.
@@ -371,8 +374,12 @@ def make_new_config(
         input_csv_path, row_number, spreadsheet_url, worksheet_name
     )
 
-    deltas[f"logging{NESTED_CONFIG_KEY_SEPARATOR}server_ip"] = server_ip
-    deltas[f"logging{NESTED_CONFIG_KEY_SEPARATOR}server_port"] = server_port
+    if server_ip is not None:
+        deltas[f"logging{NESTED_CONFIG_KEY_SEPARATOR}server_ip"] = server_ip
+    if server_port is not None:
+        deltas[f"logging{NESTED_CONFIG_KEY_SEPARATOR}server_port"] = server_port
+    if file_updates_dir:
+        deltas[f"logging{NESTED_CONFIG_KEY_SEPARATOR}file_updates_dir"] = file_updates_dir
 
     deltas["run_locally"] = run_locally
 

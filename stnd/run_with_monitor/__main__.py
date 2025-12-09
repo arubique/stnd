@@ -9,6 +9,7 @@ import time
 import warnings
 import traceback
 from tempfile import NamedTemporaryFile
+import tempfile
 import subprocess
 import shutil
 import sys
@@ -86,6 +87,7 @@ from stnd.run_with_monitor.utility.utils import (
     expand_csv,
     retrier_factory,
     is_number,
+    make_run_with_monitor_updates_dir,
 )
 from stnd.run_with_monitor.utility.configs import make_csv_config
 from stnd.run_with_monitor.utility.constants import (
@@ -184,6 +186,12 @@ def parse_args():
     parser.set_defaults(use_socket=OPEN_SOCKET)
 
     parser.add_argument(
+        "--use_files",
+        action="store_true",
+        help="use filesystem-based communication instead of sockets",
+    )
+
+    parser.add_argument(
         "--disable_local_loging",
         action="store_true",
         help="whether to disable logging to wandb and g drive for local runs",
@@ -217,7 +225,14 @@ def main_with_monitoring(
 
     args = parse_args()
     max_conc_jobs = -1 if "max_concurrent_jobs" not in args else args.max_concurrent_jobs
-    use_socket = args.use_socket
+    requested_socket = args.use_socket
+    use_files = getattr(args, "use_files", False)
+    file_updates_dir = None
+    if use_files:
+        file_updates_dir = make_run_with_monitor_updates_dir()
+    use_socket = requested_socket and not use_files
+    if requested_socket and use_files:
+        print("Warning: --use_files overrides --use_socket; proceeding with file-based communication.")
     disable_local_loging = args.disable_local_loging if args.disable_local_loging is not None else False
 
     logger = make_logger()
@@ -229,6 +244,8 @@ def main_with_monitoring(
         local_run=args.run_locally if args.run_locally is not None else False,
         open_socket=use_socket,
         logger=logger,
+        use_files=use_files,
+        file_updates_dir=file_updates_dir,
     )
 
     # Make sure server ip and port are set
@@ -236,6 +253,8 @@ def main_with_monitoring(
         logger.log("Trying to get server ip and port")
         while job_manager.server_ip is None or job_manager.server_port is None:
             time.sleep(1)
+    elif use_files:
+        logger.log(f"Using file-based communication at {job_manager.file_updates_dir}")
 
     csv_path_or_url = args.csv_path
     logger.log(f"Fetching csv from: {csv_path_or_url}")
@@ -279,6 +298,7 @@ def main_with_monitoring(
                 len(inputs_csv),
                 job_manager.server_ip,
                 job_manager.server_port,
+                job_manager.file_updates_dir,
                 disable_local_loging,
                 cluster_region,
             )

@@ -41,28 +41,37 @@ def dump_into_gsheet_queue(gsheet_updater, job_manager: JobManager):
     Args:
         gsheet_updater: GSheetBatchUpdater instance
         job_manager: JobManager instance containing job status information
+    Returns:
+        int: number of individual column updates enqueued
     """
+    updates_enqueued = 0
     for idx, job in enumerate(job_manager.jobs):
         if job.updated:
             gsheet_updater.add_to_queue(job.csv_row_id, MONITOR_STATUS_COLUMN, job.job_status)
+            updates_enqueued += 1
             gsheet_updater.add_to_queue(
                 job.csv_row_id,
                 MONITOR_LAST_UPDATE_COLUMN,
                 datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             )
+            updates_enqueued += 1
             if job.job_exit_code is not None:
                 gsheet_updater.add_to_queue(
                     job.csv_row_id, MONITOR_EXIT_CODE_COLUMN, f"{job.job_exit_code}"
                 )
+                updates_enqueued += 1
             if job.job_id is not None:
                 gsheet_updater.add_to_queue(job.csv_row_id, MONITOR_JOB_ID_COLUMN, f"{job.job_id}")
+                updates_enqueued += 1
 
             # check the queue of each job too
             for q_item in job.writing_queue:
                 gsheet_updater.add_to_queue(job.csv_row_id, q_item[0], q_item[1])
+                updates_enqueued += 1
             job.writing_queue = []
             job.updated = False
             job_manager.jobs[idx] = job
+    return updates_enqueued
 
 
 def monitor_jobs_async(
@@ -320,7 +329,15 @@ def monitor_jobs_async(
                     if jobs_update_status:
                         notify_job_failures()
                     if jobs_update_status and gsheet_updater is not None:
-                        dump_into_gsheet_queue(gsheet_updater, job_manager)
+                        enqueued = dump_into_gsheet_queue(gsheet_updater, job_manager)
+                        if enqueued:
+                            logger.log(f"File monitor: queued {enqueued} column updates for GSheets")
+            if job_manager.use_files:
+                job_manager.poll_file_messages()
+                if gsheet_updater is not None:
+                    enqueued = dump_into_gsheet_queue(gsheet_updater, job_manager)
+                    if enqueued:
+                        logger.log(f"File monitor: queued {enqueued} column updates for GSheets")
 
             # Count the statuses
             submitted = submitted_jobs.value

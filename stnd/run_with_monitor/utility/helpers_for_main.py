@@ -73,6 +73,7 @@ def prepare_wrapper_for_experiment(check_config=None, patch_config=None):
                 experiment_config = get_config(config_path, logger)
 
                 using_socket = False
+                using_files = False
                 # Check if socket is being used
                 if (
                     "logging" in experiment_config
@@ -83,6 +84,12 @@ def prepare_wrapper_for_experiment(check_config=None, patch_config=None):
                 ):
                     logger.log("Using socket for logging")
                     using_socket = True
+                elif (
+                    "logging" in experiment_config
+                    and experiment_config["logging"].get("file_updates_dir")
+                ):
+                    logger.log("Using file-based logging")
+                    using_files = True
                 if patch_config is not None:
                     patch_config(experiment_config)
 
@@ -94,6 +101,7 @@ def prepare_wrapper_for_experiment(check_config=None, patch_config=None):
                     start_time=None,
                     config_to_log_in_wandb=experiment_config,
                     using_socket=using_socket,
+                    using_files=using_files,
                 ) as logger:
                     repo = git.Repo(get_project_root_path())
                     sha = repo.head.object.hexsha

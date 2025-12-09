@@ -46,7 +46,7 @@ from .constants import (
     WANDB_SLEEP_BETWEEN_INIT_RETRIES,
     PROJECT_KEY,
 )
-from .message_client import MessageClient, MessageType
+from .message_client import FileMessageClient, MessageClient, MessageType
 
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"  # suppress tf warning
 import shutil
@@ -834,6 +834,7 @@ def redneck_logger_context(
     start_time=None,
     config_to_log_in_wandb=None,
     using_socket=False,
+    using_files=False,
 ):
     if start_time is None:
         start_time = get_current_time()
@@ -853,6 +854,18 @@ def redneck_logger_context(
         )
         messaging_client = MessageClient(server_ip, server_port, logger)
         logger.socket_client = messaging_client
+        try:
+            logger.socket_client.send_start_command()
+        except Exception as sock_err:
+            logger.log(f"Failed to notify monitor about job start over socket: {sock_err}")
+    elif using_files:
+        updates_dir = config_to_log_in_wandb["logging"].get("file_updates_dir")
+        messaging_client = FileMessageClient(updates_dir, logger)
+        logger.socket_client = messaging_client
+        try:
+            logger.socket_client.send_start_command()
+        except Exception as file_err:
+            logger.log(f"Failed to notify monitor via file channel: {file_err}")
 
     logger.log("Hostname: {}".format(get_hostname()))
     logger.log("Process id: {}".format(os.getpid()))

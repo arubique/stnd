@@ -15,6 +15,7 @@ import socket
 import traceback
 import yaml
 from tempfile import NamedTemporaryFile
+import tempfile
 import csv
 from filelock import FileLock
 import json
@@ -329,6 +330,16 @@ def get_project_root_path():
             f"STAI-tuned expects project root path " f'in variable "{PROJECT_ROOT_ENV_NAME}"'
         )
     return os.environ[PROJECT_ROOT_ENV_NAME]
+
+
+def make_run_with_monitor_updates_dir(prefix="run_with_monitor_updates_"):
+    """
+    Create a updates folder on the shared filesystem so both the monitor and
+    the worker processes can read/write JSON status files.
+    """
+    base_tmp_dir = os.path.join(get_project_root_path(), "tmp")
+    os.makedirs(base_tmp_dir, exist_ok=True)
+    return tempfile.mkdtemp(prefix=prefix, dir=base_tmp_dir)
 
 
 def get_stuned_root_path():
