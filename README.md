@@ -23,7 +23,7 @@ pip install git+https://github.com/arubique/stnd.git
   author       = {Rubinstein, Alexander and Uselis, Arnas},
   title        = {STAI-tuned Experiment Scheduler: Structured Experiment Management with Google Sheets, Weights \& Biases, and HPC Integration},
   year         = {2025},
-  howpublished = {\url{https://github.com/arubique/stnd}},  % replace with actual URL if different
+  howpublished = {\url{https://github.com/arubique/stnd}}, 
   note         = {GitHub repository. Utility code for reproducible and streamlined experiment management with Google Sheets integration, W\&B logging, and HPC support (e.g., Slurm).}
 }
 ```
