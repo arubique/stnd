@@ -1,5 +1,7 @@
 # stnd
 
+[![DOI](https://zenodo.org/badge/968769902.svg)](https://doi.org/10.5281/zenodo.18944393)
+
 ## Overview
 
 This repository contains utility code for running and organizing structured experiments in a reproducible and debuggable way — freeing up mental overhead. It replaces manual bash scripting, log handling, and job submission (e.g., via Slurm) with a streamlined workflow. Once set up, all you need to do to run a new experiment is to specify relevant arguments in a Google Sheet, copy the auto-generated command to the terminal and press Enter. The system handles the rest.
