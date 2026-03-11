@@ -91,6 +91,9 @@ PLT_PLOT_WIDTH = 5
 ENV_VAR_RE = re.compile(r"<\$([a-zA-Z0-9-_]+)>")
 
 
+SKIP_NORMALIZATION_PREFIX = "!!!"
+
+
 class ChildrenForPicklingPreparer:
     def _prepare_for_pickling(self):
         for attr_name in object_attributes(self):
@@ -1110,6 +1113,8 @@ def normalize_string_path(path, current_dir):
 def normalize_path(path, current_dir=None):
     if path is None:
         return None
+    if path.startswith(SKIP_NORMALIZATION_PREFIX):
+        return path[len(SKIP_NORMALIZATION_PREFIX):]
     if isinstance(path, str):
         assert path
         return normalize_string_path(path, current_dir)
