@@ -21,7 +21,13 @@ from stnd.utility.utils import (
     optionally_make_parent_dir,
     run_cmd_through_popen,
 )
-from stnd.run_from_csv.__main__ import RUNNER_PLACEHOLDER, BACKSLASH_PLACEHOLDER
+from stnd.run_from_csv.__main__ import (
+    RUNNER_PLACEHOLDER,
+    COMMA_PLACEHOLDER,
+    BACKSLASH_PLACEHOLDER,
+    QUOTE_PLACEHOLDER,
+    AMPERSAND_PLACEHOLDER,
+)
 from stnd.run_from_csv.__main__ import make_task_cmd
 from stnd.utility.utils import SKIP_SHELL_INIT_PREFIX, NEW_SHELL_INIT_COMMAND
 from stnd.utility.logger import PLACEHOLDERS_FOR_DEFAULT
@@ -577,7 +583,13 @@ def test_column_placeholder_replacement():
 
 
 def test_make_task_cmd_skips_shell_init_for_prefixed_conda_env():
-    conda_env = f"{SKIP_SHELL_INIT_PREFIX}uv run"
+    conda_env = (
+        f"{SKIP_SHELL_INIT_PREFIX}cd{SKIP_SHELL_INIT_PREFIX}/tmp"
+        f"{SKIP_SHELL_INIT_PREFIX}{AMPERSAND_PLACEHOLDER}"
+        f"{SKIP_SHELL_INIT_PREFIX}uv{SKIP_SHELL_INIT_PREFIX}run"
+        f"{SKIP_SHELL_INIT_PREFIX}--flag={QUOTE_PLACEHOLDER}"
+        f"a{COMMA_PLACEHOLDER}b{BACKSLASH_PLACEHOLDER}c{QUOTE_PLACEHOLDER}"
+    )
 
     cmd = make_task_cmd(
         new_config_path="/tmp/config.yaml",
@@ -585,7 +597,10 @@ def test_make_task_cmd_skips_shell_init_for_prefixed_conda_env():
         exec_path="/tmp/train.py",
     )
 
-    assert cmd == "uv run python /tmp/train.py --config_path /tmp/config.yaml"
+    assert (
+        cmd
+        == 'cd /tmp && uv run --flag="a,b\\c" python /tmp/train.py --config_path /tmp/config.yaml'
+    )
     assert NEW_SHELL_INIT_COMMAND not in cmd
 
 

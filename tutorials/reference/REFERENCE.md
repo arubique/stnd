@@ -21,6 +21,7 @@ Before starting this tutorial, make sure you:
 | `__COMMA__`    | Substituted with a comma (`,`). Useful when you need to pass a comma-separated list inside a single cell without breaking the .csv table structure. |
 | `__B__`        | Substituted with a backslash (`\`). Handy for escaping characters (e.g. in regexes as [here](../runner/RUNNER.md#take_last_dict)) or creating multi-line commands. |
 | `__Q__`        | Substituted with a double quote (`"`). |
+| `__AMPERSAND__` | Substituted with a double ampersand (`&&`). Useful when a command value needs shell command chaining without putting raw ampersands in the table. |
 | `__RUNNER__`   | The path to the runner script, as described in the [runner tutorial](../runner/RUNNER.md#prepare-results-table). Allows for flexible referencing of the execution script without hardcoding paths. |
 | `__COL:<col_name>__` | Substituted with the value from the column named `<col_name>` in the same row. Useful for referencing values from other columns within the same row. For example, if you have columns `model_name` and `checkpoint_path`, you can use `__COL:checkpoint_path__/__COL:model_name__.pkl` to create a path that combines values from both columns. If the referenced column doesn't exist, an error will be raised. |
 
@@ -34,7 +35,7 @@ Before starting this tutorial, make sure you:
 | `condor:` | Prefix used to specify HTCondor job submission parameters. For example, `condor:bid` with value `10` will put a bid of 10 when submitting the job to HTCondor. This prefix is analogous to `slurm:`. |
 | `cmd_env_var:` | Prefix used to specify environment variables that should be set before running the experiment command. For example, `cmd_env_var:CUDA_VISIBLE_DEVICES` with value `0` will set `CUDA_VISIBLE_DEVICES=0` in the environment before executing the experiment command. This is useful for controlling environment-specific behavior like GPU selection, library paths, etc. Multiple environment variables can be set by adding multiple columns with this prefix. The environment variables are exported before the command runs and are available to the command and any subprocesses it spawns. |
 | `!!!` before a path | Prefix used to skip path normalization. For example, `!!!s3://bucket/file.txt` will be passed through as `s3://bucket/file.txt` instead of being converted to a local absolute path. |
-| `!!!` before `--conda_env` | Prefix used to skip the default shell initialization command before running an experiment. For example, `--conda_env "!!!uv run"` will run `uv run python ...` directly instead of prepending the default `source ... && conda activate ...` shell setup. |
+| `+++` before `--conda_env` | Prefix used to skip the default shell initialization command before running an experiment. Any later `+++` in the value is converted to a space, and placeholders from the [Placeholders table](#placeholders-table) are applied. For example, `--conda_env "+++cd+++/tmp+++__AMPERSAND__+++uv+++run"` will run `cd /tmp && uv run python ...` instead of prepending the default `source ... && conda activate ...` shell setup. |
 
 
 ## Environment variables table

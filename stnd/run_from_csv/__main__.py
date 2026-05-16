@@ -88,6 +88,7 @@ RUNNER_PLACEHOLDER = "__RUNNER__"
 COMMA_PLACEHOLDER = "__COMMA__"
 QUOTE_PLACEHOLDER = "__Q__"
 BACKSLASH_PLACEHOLDER = "__B__"
+AMPERSAND_PLACEHOLDER = "__AMPERSAND__"
 PATH_TO_RUNNER_MAIN = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "run_cmd", "main.py"
 )
@@ -371,6 +372,7 @@ def process_csv_row(
         replace_placeholders(csv_row, COMMA_PLACEHOLDER, ",")
         replace_placeholders(csv_row, QUOTE_PLACEHOLDER, '"')
         replace_placeholders(csv_row, BACKSLASH_PLACEHOLDER, "\\")
+        replace_placeholders(csv_row, AMPERSAND_PLACEHOLDER, "&&")
         replace_column_placeholders(csv_row)
 
         default_config_path_or_url = csv_row[PATH_TO_DEFAULT_CONFIG_COLUMN]
@@ -698,7 +700,17 @@ def make_task_cmd(new_config_path, conda_env, exec_path, logger=None):
         return main_command
     else:
         if conda_env.startswith(SKIP_SHELL_INIT_PREFIX):
-            conda_env = conda_env[len(SKIP_SHELL_INIT_PREFIX):]
+            conda_env = conda_env[
+                len(SKIP_SHELL_INIT_PREFIX):
+            ].replace(SKIP_SHELL_INIT_PREFIX, " ").replace(
+                AMPERSAND_PLACEHOLDER, "&&"
+            ).replace(
+                BACKSLASH_PLACEHOLDER, "\\"
+            ).replace(
+                QUOTE_PLACEHOLDER, '"'
+            ).replace(
+                COMMA_PLACEHOLDER, ","
+            )
             return "{} {}".format(conda_env, main_command)
         return "{} {} && {}".format(
             NEW_SHELL_INIT_COMMAND, conda_env, main_command
