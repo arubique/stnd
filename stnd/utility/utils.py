@@ -92,6 +92,7 @@ ENV_VAR_RE = re.compile(r"<\$([a-zA-Z0-9-_]+)>")
 
 
 SKIP_NORMALIZATION_PREFIX = "!!!"
+SKIP_SHELL_INIT_PREFIX = "!!!"
 
 
 class ChildrenForPicklingPreparer:

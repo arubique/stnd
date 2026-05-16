@@ -26,6 +26,7 @@ from stnd.utility.utils import (
     expand_csv,
     retrier_factory,
     is_number,
+    SKIP_SHELL_INIT_PREFIX,
     range_for_each_group,
     optionally_make_parent_dir,
     itself_and_lower_upper_case,
@@ -696,6 +697,9 @@ def make_task_cmd(new_config_path, conda_env, exec_path, logger=None):
         error_or_print(f"Running without conda env: {main_command}", logger)
         return main_command
     else:
+        if conda_env.startswith(SKIP_SHELL_INIT_PREFIX):
+            conda_env = conda_env[len(SKIP_SHELL_INIT_PREFIX):]
+            return "{} {}".format(conda_env, main_command)
         return "{} {} && {}".format(
             NEW_SHELL_INIT_COMMAND, conda_env, main_command
         )
